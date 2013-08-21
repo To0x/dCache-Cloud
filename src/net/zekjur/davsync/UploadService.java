@@ -18,6 +18,9 @@ import javax.net.ssl.X509TrustManager;
 
 import net.zekjur.davsync.CountingInputStreamEntity.UploadListener;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.auth.AuthScope;
@@ -38,7 +41,11 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HTTP;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.EntityUtils;
 
 import android.app.IntentService;
 import android.app.NotificationManager;
@@ -200,11 +207,21 @@ public class UploadService extends IntentService {
 		}
 
 		try {
+			
+			HttpContext localContext = new BasicHttpContext();
 			ClientConnectionManager manag = httpClient.getConnectionManager();
-			HttpResponse response = httpClient.execute(httpPut);
+			HttpResponse response = httpClient.execute(httpPut, localContext);
+			
+			HttpHost target = (HttpHost) localContext.getAttribute(
+				    ExecutionContext.HTTP_TARGET_HOST);
+
+				System.out.println("Final target: " + target);
+
+			
 			int status = response.getStatusLine().getStatusCode();
 			// 201 means the file was created.
 			// 200 and 204 mean it was stored but already existed.
+			
 			if (status == 201 || status == 200 || status == 204) {
 				// The file was uploaded, so we remove the ongoing notification,
 				// remove it from the queue and thats it.
@@ -239,6 +256,15 @@ public class UploadService extends IntentService {
 	{ 
 		DefaultHttpClient ret = null;
 
+		java.util.logging.Logger.getLogger("org.apache.http.wire").setLevel(java.util.logging.Level.FINEST);
+		java.util.logging.Logger.getLogger("org.apache.http.headers").setLevel(java.util.logging.Level.FINEST);
+
+		System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
+		System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
+		System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "debug");
+		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "debug");
+		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.headers", "debug");
+		
 		//sets up parameters
 	    HttpParams params = new BasicHttpParams();
 	    HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
