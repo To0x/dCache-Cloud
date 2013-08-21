@@ -42,6 +42,7 @@ import org.apache.http.protocol.HTTP;
 
 import android.app.IntentService;
 import android.app.NotificationManager;
+import android.content.ContentProvider;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -53,6 +54,7 @@ import android.provider.MediaStore;
 import android.app.Notification;
 import android.app.Notification.Builder;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
 
 public class UploadService extends IntentService {
@@ -85,6 +87,7 @@ public class UploadService extends IntentService {
 		    filename = uri.getLastPathSegment();
 		}
 		else if (scheme.equals("content")) {
+
 		    String[] proj = { MediaStore.Images.Media.TITLE };
 		    Cursor cursor = getContentResolver().query(uri, proj, null, null, null);
 		    if (cursor != null && cursor.getCount() != 0) {
@@ -92,6 +95,11 @@ public class UploadService extends IntentService {
 		        cursor.moveToFirst();
 		        filename = cursor.getString(columnIndex);
 		    }
+		    
+		    MimeTypeMap mime = MimeTypeMap.getSingleton();
+		    String type = mime.getExtensionFromMimeType(cr.getType(uri));
+		    
+		    filename += "." + type;
 		}
 		
 		/////
@@ -101,14 +109,25 @@ public class UploadService extends IntentService {
 			return;
 		}
 
+		
+		
 		final Builder mBuilder = new Notification.Builder(this);
-		mBuilder.setContentTitle("Uploading to WebDAV server");
+		mBuilder.setContentTitle("Uploading to dCache server");
 		mBuilder.setContentText(filename);
 		mBuilder.setSmallIcon(android.R.drawable.ic_menu_upload);
 		mBuilder.setOngoing(true);
 		mBuilder.setProgress(100, 30, false);
 		final NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		//mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
+		try {
+			if (android.os.Build.VERSION.SDK_INT < 16)
+				mNotificationManager.notify(uri.toString(), 0,mBuilder.getNotification());
+			else
+				mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
+		}
+		catch (Exception e) {
+			int bla = 3;
+			bla = 4;
+		}
 
 		HttpPut httpPut = new HttpPut(webdavUrl + filename);
 
@@ -127,7 +146,10 @@ public class UploadService extends IntentService {
 			@Override
 			public void onChange(int percent) {
 				mBuilder.setProgress(100, percent, false);
-				//mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
+				if (android.os.Build.VERSION.SDK_INT < 16)
+					mNotificationManager.notify(uri.toString(), 0,mBuilder.getNotification());
+				else
+					mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
 			}
 		});
 
@@ -204,10 +226,13 @@ public class UploadService extends IntentService {
 		// XXX: It would be good to provide an option to try again.
 		// (or try it again automatically?)
 		// XXX: possibly we should re-queue the images in the database
-		mBuilder.setContentTitle("Error uploading to WebDAV server");
+		mBuilder.setContentTitle("Error uploading to dCache server");
 		mBuilder.setProgress(0, 0, false);
 		mBuilder.setOngoing(false);
-		mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
+		if (android.os.Build.VERSION.SDK_INT < 16)
+			mNotificationManager.notify(uri.toString(), 0,mBuilder.getNotification());
+		else
+			mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
 	}
 	
 	public DefaultHttpClient getClient() throws KeyStoreException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, IOException 
@@ -218,7 +243,8 @@ public class UploadService extends IntentService {
 	    HttpParams params = new BasicHttpParams();
 	    HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
 	    HttpProtocolParams.setContentCharset(params, "utf-8");
-	    params.setBooleanParameter("http.protocol.expect-continue", false);
+	    //params.setBooleanParameter("http.protocol.expect-continue", false);
+	    params.setBooleanParameter("http.protocol.expect-continue", true);
 	
 	    
         KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
