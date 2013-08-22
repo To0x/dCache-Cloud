@@ -10,7 +10,6 @@ import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
-import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
@@ -45,6 +44,7 @@ public class SettingsActivity extends PreferenceActivity implements OnSharedPref
 	private EditTextPreference webdavUserPreference;
 	private EditTextPreference webdavPwdPreference;
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void onPostCreate(Bundle savedInstanceState) {
 		super.onPostCreate(savedInstanceState);
@@ -56,6 +56,7 @@ public class SettingsActivity extends PreferenceActivity implements OnSharedPref
 		webdavPwdPreference = (EditTextPreference) getPreferenceScreen().findPreference("webdav_password");
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void onPause() {
 		super.onPause();
@@ -63,6 +64,7 @@ public class SettingsActivity extends PreferenceActivity implements OnSharedPref
 		getPreferenceScreen().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void onResume() {
 		super.onResume();

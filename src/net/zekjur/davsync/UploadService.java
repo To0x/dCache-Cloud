@@ -3,23 +3,16 @@ package net.zekjur.davsync;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-
+import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import net.zekjur.davsync.CountingInputStreamEntity.UploadListener;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
@@ -27,9 +20,7 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
@@ -43,13 +34,13 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.ExecutionContext;
-import org.apache.http.protocol.HTTP;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
 
+import android.annotation.SuppressLint;
 import android.app.IntentService;
+import android.app.Notification;
+import android.app.Notification.Builder;
 import android.app.NotificationManager;
-import android.content.ContentProvider;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -58,17 +49,17 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
-import android.app.Notification;
-import android.app.Notification.Builder;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 
+@SuppressLint("NewApi")
 public class UploadService extends IntentService {
 	public UploadService() {
 		super("UploadService");
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		final Uri uri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
@@ -125,16 +116,11 @@ public class UploadService extends IntentService {
 		mBuilder.setOngoing(true);
 		mBuilder.setProgress(100, 30, false);
 		final NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		try {
-			if (android.os.Build.VERSION.SDK_INT < 16)
-				mNotificationManager.notify(uri.toString(), 0,mBuilder.getNotification());
-			else
-				mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
-		}
-		catch (Exception e) {
-			int bla = 3;
-			bla = 4;
-		}
+	
+		if (android.os.Build.VERSION.SDK_INT < 16)
+			mNotificationManager.notify(uri.toString(), 0,mBuilder.getNotification());
+		else
+			mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
 
 		HttpPut httpPut = new HttpPut(webdavUrl + filename);
 
@@ -159,36 +145,19 @@ public class UploadService extends IntentService {
 					mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
 			}
 		});
-
-		httpPut.setEntity(entity);
-
-		int timeoutConnection = 100000;
-		HttpParams myParams = new BasicHttpParams();
-		HttpConnectionParams.setConnectionTimeout(myParams, timeoutConnection);
-		HttpConnectionParams.setSoTimeout(myParams, timeoutConnection);
 		
+		//put data to feater of http-package
+		//httpPut.setEntity(entity);
 		
 		DefaultHttpClient httpClient = null;
 			try {
 				httpClient = getClient();
-			} catch (KeyManagementException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			} catch (UnrecoverableKeyException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			} catch (KeyStoreException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			} catch (NoSuchAlgorithmException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			} catch (CertificateException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			} catch (IOException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
+			} catch (GeneralSecurityException e) {
+				Log.d("SECURITY", String.format("General Security Error: %s", e.toString()));
+				e.printStackTrace();
+			} catch (IOException e1) {
+				Log.d("Unknown", String.format("Error: %s", e1.toString()));
+				e1.printStackTrace();
 			}
 
 
@@ -209,20 +178,43 @@ public class UploadService extends IntentService {
 		try {
 			
 			HttpContext localContext = new BasicHttpContext();
-			ClientConnectionManager manag = httpClient.getConnectionManager();
 			HttpResponse response = httpClient.execute(httpPut, localContext);
-			
-			HttpHost target = (HttpHost) localContext.getAttribute(
-				    ExecutionContext.HTTP_TARGET_HOST);
-
-				System.out.println("Final target: " + target);
-
-			
+					
 			int status = response.getStatusLine().getStatusCode();
 			// 201 means the file was created.
 			// 200 and 204 mean it was stored but already existed.
 			
 			if (status == 201 || status == 200 || status == 204) {
+				
+				
+				HttpHost target = (HttpHost) localContext.getAttribute(
+					    ExecutionContext.HTTP_TARGET_HOST);
+				
+				if (httpPut.getURI().toString().equals(target.toString())) // no redirection! (pool-target is same as door)
+					return;
+
+					System.out.println("Final target: " + target);
+					
+				if (target != null) {
+					// redirect!
+					
+					httpPut.setEntity(entity);
+					
+					response = httpClient.execute(target, httpPut);
+					status = response.getStatusLine().getStatusCode();
+					
+					
+					if (status == 201 || status == 200 || status == 204) {
+						// The file was uploaded, so we remove the ongoing notification,
+						// remove it from the queue and thats it.
+						mNotificationManager.cancel(uri.toString(), 0);
+						DavSyncOpenHelper helper = new DavSyncOpenHelper(this);
+						helper.removeUriFromQueue(uri.toString());
+						return;
+					}	
+				}
+				
+				
 				// The file was uploaded, so we remove the ongoing notification,
 				// remove it from the queue and thats it.
 				mNotificationManager.cancel(uri.toString(), 0);
@@ -230,6 +222,7 @@ public class UploadService extends IntentService {
 				helper.removeUriFromQueue(uri.toString());
 				return;
 			}
+			
 			Log.d("davsyncs", "" + response.getStatusLine());
 			mBuilder.setContentText(filename + ": " + response.getStatusLine());
 		} catch (ClientProtocolException e) {
