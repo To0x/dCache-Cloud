@@ -3,6 +3,7 @@ package net.zekjur.davsync;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream.PutField;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -13,6 +14,8 @@ import java.security.cert.CertificateException;
 
 import net.zekjur.davsync.CountingInputStreamEntity.UploadListener;
 
+import org.apache.http.HttpConnection;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
@@ -20,6 +23,7 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
@@ -75,9 +79,7 @@ public class UploadService extends IntentService {
 			return;
 		}
 
-		ContentResolver cr = getContentResolver();
-
-		
+		ContentResolver cr = getContentResolver();		
 		////
 		String filename = null;
 		String scheme = uri.getScheme();
@@ -133,7 +135,7 @@ public class UploadService extends IntentService {
 			e1.printStackTrace();
 			return;
 		}
-
+		
 		CountingInputStreamEntity entity = new CountingInputStreamEntity(stream, fd.getStatSize());
 		entity.setUploadListener(new UploadListener() {
 			@Override
@@ -147,7 +149,8 @@ public class UploadService extends IntentService {
 		});
 		
 		//put data to feater of http-package
-		//httpPut.setEntity(entity);
+		httpPut.setEntity(entity);
+
 		
 		DefaultHttpClient httpClient = null;
 			try {
@@ -177,18 +180,22 @@ public class UploadService extends IntentService {
 
 		try {
 			
+			
+			RequestEntity bla = new RequestEntity();
+			
 			HttpContext localContext = new BasicHttpContext();
+			
 			HttpResponse response = httpClient.execute(httpPut, localContext);
-					
+				
+			HttpHost target = (HttpHost) localContext.getAttribute(
+				    ExecutionContext.HTTP_TARGET_HOST);
+			
 			int status = response.getStatusLine().getStatusCode();
 			// 201 means the file was created.
 			// 200 and 204 mean it was stored but already existed.
 			
 			if (status == 201 || status == 200 || status == 204) {
 				
-				
-				HttpHost target = (HttpHost) localContext.getAttribute(
-					    ExecutionContext.HTTP_TARGET_HOST);
 				
 				if (httpPut.getURI().toString().equals(target.toString())) // no redirection! (pool-target is same as door)
 					return;
