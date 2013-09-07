@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream.PutField;
+import java.net.ProtocolException;
+import java.net.URI;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -11,6 +13,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Arrays;
 
 import net.zekjur.davsync.CountingInputStreamEntity.UploadListener;
 
@@ -31,6 +34,7 @@ import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.DefaultRedirectHandler;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
@@ -59,58 +63,128 @@ import android.webkit.MimeTypeMap;
 
 @SuppressLint("NewApi")
 public class UploadService extends IntentService {
+	
+	private boolean isRedirected = false;
+	private String finalTarget = null;
+	private DefaultHttpClient httpClient = null;
+	private final HttpContext context = new BasicHttpContext();
+	CountingInputStreamEntity entity = null;
+	private ContentResolver cr = getContentResolver();
+	
+	
+	
+	
 	public UploadService() {
 		super("UploadService");
 	}
-
-	@SuppressWarnings("deprecation")
-	@Override
-	protected void onHandleIntent(Intent intent) {
-		final Uri uri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
-		Log.d("davsyncs", "Uploading " + uri.toString());
-
-		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
-
-		String webdavUrl = preferences.getString("webdav_url", null);
-		String webdavUser = preferences.getString("webdav_user", null);
-		String webdavPassword = preferences.getString("webdav_password", null);
-		if (webdavUrl == null) {
-			Log.d("davsyncs", "No WebDAV URL set up.");
-			return;
+	
+	private boolean uploadFile() {
+		
+		if (httpClient == null) {			
+			try {
+				httpClient = getClient();
+			} catch(Exception e) {} 
 		}
+		
+		// the return Value from the doors seems to be like "[Location: http:....?uid=...]"
+		if (!finalTarget.startsWith("http")) {
+			finalTarget = finalTarget.substring(finalTarget.indexOf("http"), finalTarget.length()-1);
+		}
+		
+		HttpPut httpPut = new HttpPut(finalTarget);
+		httpPut.setEntity(entity);
+		HttpResponse response = null;
+		try {
+			response = httpClient.execute(httpPut, context);
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+			return false;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+		
+		int status = response.getStatusLine().getStatusCode();
+		// 201 means the file was created.
+		// 200 and 204 mean it was stored but already existed.
+		
+		if (status == 201 || status == 200 || status == 204) {
 
-		ContentResolver cr = getContentResolver();		
-		////
+			return true;
+		}
+		else {
+
+			if (isRedirected) {
+				// TODO in case of next step?
+			}
+			return false;	
+		}
+	}
+
+	private String getFilePath(Uri uriToFile) {
+		
 		String filename = null;
-		String scheme = uri.getScheme();
+		String scheme = uriToFile.getScheme();
 		if (scheme.equals("file")) {
-		    filename = uri.getLastPathSegment();
+		    filename = uriToFile.getLastPathSegment();
 		}
 		else if (scheme.equals("content")) {
 
 		    String[] proj = { MediaStore.Images.Media.TITLE };
-		    Cursor cursor = getContentResolver().query(uri, proj, null, null, null);
+		    Cursor cursor = getContentResolver().query(uriToFile, proj, null, null, null);
 		    if (cursor != null && cursor.getCount() != 0) {
-		        int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.TITLE);
+		    	int columnIndex = -1;
+		    	try {
+		    		columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.TITLE);
+		    	} catch (IllegalArgumentException e) {
+		    		Log.d("dCache", e.toString());
+		    	}
 		        cursor.moveToFirst();
 		        filename = cursor.getString(columnIndex);
 		    }
 		    
 		    MimeTypeMap mime = MimeTypeMap.getSingleton();
-		    String type = mime.getExtensionFromMimeType(cr.getType(uri));
+		    String type = mime.getExtensionFromMimeType(cr.getType(uriToFile));
 		    
 		    filename += "." + type;
 		}
-		
-		/////
 
-		if (filename == null) {
-			Log.d("davsyncs", "filenameFromUri returned null");
+		
+		return filename;
+	}
+	
+	
+	@SuppressWarnings("deprecation")
+	@Override
+	protected void onHandleIntent(Intent intent) {
+		
+		
+		
+		// Get Extras from Intend-Loader
+		final Uri uri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+		Log.d("davsyncs", "Uploading " + uri.toString());
+
+		
+		/* Get Settings Begin */
+		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
+		String webdavUrl = preferences.getString("webdav_url", null);
+		String webdavUser = preferences.getString("webdav_user", null);
+		String webdavPassword = preferences.getString("webdav_password", null);
+		/* Get Settings End */
+		
+		if (webdavUrl == null) {
+			Log.d("dCache", "No URL set up.");
 			return;
 		}
 
-		
-		
+		String filename = getFilePath(uri);
+
+		if (filename == null) {
+			Log.d("dCache", "fileName returned null");
+			return;
+		}
+
+		/* Setup Notification Manager Begin */ 	
 		final Builder mBuilder = new Notification.Builder(this);
 		mBuilder.setContentTitle("Uploading to dCache server");
 		mBuilder.setContentText(filename);
@@ -118,7 +192,8 @@ public class UploadService extends IntentService {
 		mBuilder.setOngoing(true);
 		mBuilder.setProgress(100, 30, false);
 		final NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-	
+		/* Setup Notification Manager End */
+		
 		if (android.os.Build.VERSION.SDK_INT < 16)
 			mNotificationManager.notify(uri.toString(), 0,mBuilder.getNotification());
 		else
@@ -132,11 +207,13 @@ public class UploadService extends IntentService {
 			fd = cr.openFileDescriptor(uri, "r");
 			stream = cr.openInputStream(uri);
 		} catch (FileNotFoundException e1) {
+			Log.d("dCache", "File not Found!");
 			e1.printStackTrace();
 			return;
 		}
 		
-		CountingInputStreamEntity entity = new CountingInputStreamEntity(stream, fd.getStatSize());
+		entity = new CountingInputStreamEntity(stream, fd.getStatSize());
+		
 		entity.setUploadListener(new UploadListener() {
 			@Override
 			public void onChange(int percent) {
@@ -148,11 +225,8 @@ public class UploadService extends IntentService {
 			}
 		});
 		
-		//put data to feater of http-package
 		httpPut.setEntity(entity);
 
-		
-		DefaultHttpClient httpClient = null;
 			try {
 				httpClient = getClient();
 			} catch (GeneralSecurityException e) {
@@ -177,61 +251,25 @@ public class UploadService extends IntentService {
 				return;
 			}
 		}
-
-		try {
+	
+		httpClient.setRedirectHandler(new DefaultRedirectHandler() {
 			
-			
-			RequestEntity bla = new RequestEntity();
-			
-			HttpContext localContext = new BasicHttpContext();
-			
-			HttpResponse response = httpClient.execute(httpPut, localContext);
+			@Override
+			public URI getLocationURI(HttpResponse response, HttpContext contet) throws org.apache.http.ProtocolException {
 				
-			HttpHost target = (HttpHost) localContext.getAttribute(
-				    ExecutionContext.HTTP_TARGET_HOST);
-			
-			int status = response.getStatusLine().getStatusCode();
-			// 201 means the file was created.
-			// 200 and 204 mean it was stored but already existed.
-			
-			if (status == 201 || status == 200 || status == 204) {
+				Log.d("Rederection!!: ", Arrays.toString(response.getHeaders("Location")));
+				System.out.println(Arrays.toString(response.getHeaders("Location")));
 				
-				
-				if (httpPut.getURI().toString().equals(target.toString())) // no redirection! (pool-target is same as door)
-					return;
-
-					System.out.println("Final target: " + target);
-					
-				if (target != null) {
-					// redirect!
-					
-					httpPut.setEntity(entity);
-					
-					response = httpClient.execute(target, httpPut);
-					status = response.getStatusLine().getStatusCode();
-					
-					
-					if (status == 201 || status == 200 || status == 204) {
-						// The file was uploaded, so we remove the ongoing notification,
-						// remove it from the queue and thats it.
-						mNotificationManager.cancel(uri.toString(), 0);
-						DavSyncOpenHelper helper = new DavSyncOpenHelper(this);
-						helper.removeUriFromQueue(uri.toString());
-						return;
-					}	
-				}
-				
-				
-				// The file was uploaded, so we remove the ongoing notification,
-				// remove it from the queue and thats it.
-				mNotificationManager.cancel(uri.toString(), 0);
-				DavSyncOpenHelper helper = new DavSyncOpenHelper(this);
-				helper.removeUriFromQueue(uri.toString());
-				return;
+				finalTarget = Arrays.toString(response.getHeaders("Location"));
+				isRedirected = true;
+				return super.getLocationURI(response, context);
 			}
 			
-			Log.d("davsyncs", "" + response.getStatusLine());
-			mBuilder.setContentText(filename + ": " + response.getStatusLine());
+		});
+		
+		HttpResponse response = null;
+		try {	
+			response = httpClient.execute(httpPut, context);
 		} catch (ClientProtocolException e) {
 			e.printStackTrace();
 			mBuilder.setContentText(filename + ": " + e.getLocalizedMessage());
@@ -239,6 +277,30 @@ public class UploadService extends IntentService {
 			e.printStackTrace();
 			mBuilder.setContentText(filename + ": " + e.getLocalizedMessage());
 		}
+			
+		// Code will interrupt if there is a redirection!
+		
+		if (isRedirected) 
+			uploadFile();
+		
+		if (response == null)
+			return;
+			
+		int status = response.getStatusLine().getStatusCode();
+			// 201 means the file was created.
+			// 200 and 204 mean it was stored but already existed.
+			
+			if (status == 201 || status == 200 || status == 204) {
+
+				mNotificationManager.cancel(uri.toString(), 0);
+				DavSyncOpenHelper helper = new DavSyncOpenHelper(this);
+				helper.removeUriFromQueue(uri.toString());
+				return;
+			}	
+		
+			
+			Log.d("davsyncs", "" + response.getStatusLine());
+			mBuilder.setContentText(filename + ": " + response.getStatusLine());
 
 		// XXX: It would be good to provide an option to try again.
 		// (or try it again automatically?)
@@ -252,10 +314,13 @@ public class UploadService extends IntentService {
 			mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
 	}
 	
+	
+	
 	public DefaultHttpClient getClient() throws KeyStoreException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, IOException 
 	{ 
 		DefaultHttpClient ret = null;
 
+		/* LOGGING begin 
 		java.util.logging.Logger.getLogger("org.apache.http.wire").setLevel(java.util.logging.Level.FINEST);
 		java.util.logging.Logger.getLogger("org.apache.http.headers").setLevel(java.util.logging.Level.FINEST);
 
@@ -264,6 +329,7 @@ public class UploadService extends IntentService {
 		System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "debug");
 		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "debug");
 		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.headers", "debug");
+		/* LOGGING end */
 		
 		//sets up parameters
 	    HttpParams params = new BasicHttpParams();
@@ -275,10 +341,7 @@ public class UploadService extends IntentService {
 	    
         KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
         trustStore.load(null, null);
-        
-		//SSLSocketFactory sslf = new SSLSocketFactory(trustStore);
-		//sslf.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-		
+
 		MySSLSocketFactory ssl = new MySSLSocketFactory(trustStore);
 		ssl.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
 		
@@ -286,11 +349,6 @@ public class UploadService extends IntentService {
 	    registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
 	    registry.register(new Scheme("https", ssl, 443));
 	    
-	    
-	    
-	    //registers schemes for both http and https
-	    //final SSLSocketFactory sslSocketFactory = SSLSocketFactory.getSocketFactory();
-	
 	    ThreadSafeClientConnManager manager = new ThreadSafeClientConnManager(params, registry);
 	    ret = new DefaultHttpClient(manager, params);
 	    return ret;
