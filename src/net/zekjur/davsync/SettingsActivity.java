@@ -2,8 +2,12 @@ package net.zekjur.davsync;
 
 import java.util.List;
 
+import net.zekjur.davsync.DownloadService;
+import net.zekjur.davsync.R;
+
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Configuration;
@@ -13,6 +17,9 @@ import android.preference.EditTextPreference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 
 // XXX: I am aware of the fact that the EditTextPreferences don’t display a
 // meaningful summary. This seems to be possible, see
@@ -40,6 +47,7 @@ public class SettingsActivity extends PreferenceActivity implements OnSharedPref
 	 */
 	private static final boolean ALWAYS_SIMPLE_PREFS = false;
 	
+	//private Button button;
 	private EditTextPreference webdavUrlPreference;
 	private EditTextPreference webdavUserPreference;
 	private EditTextPreference webdavPwdPreference;
@@ -50,6 +58,15 @@ public class SettingsActivity extends PreferenceActivity implements OnSharedPref
 		super.onPostCreate(savedInstanceState);
 
 		setupSimplePreferencesScreen();
+		
+		/*final Context context = this;
+		button.setOnClickListener(new OnClickListener() {
+		  @Override
+		  public void onClick(View arg0) {
+		    Intent intent = new Intent(context, DownloadService.class);
+		    startActivity(intent);
+		  }
+		});*/
 		
 		webdavUrlPreference = (EditTextPreference) getPreferenceScreen().findPreference("webdav_url");
 		webdavUserPreference = (EditTextPreference) getPreferenceScreen().findPreference("webdav_user");
