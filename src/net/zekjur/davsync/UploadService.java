@@ -78,6 +78,14 @@ public class UploadService extends IntentService {
 	private Builder mBuilder = null;
 	private NotificationManager mNotificationManager = null;
 	
+	// Credentials
+	private String url = null;
+	private String user = null;
+	private String password = null;
+	
+	String filename = null;
+	Uri uri = null;
+	
 	
 	
 	
@@ -86,17 +94,12 @@ public class UploadService extends IntentService {
 	}
 	
 	private boolean uploadFile() {
-		
-		if (httpClient == null) {			
-			try {
-				httpClient = getClient();
-			} catch(Exception e) {} 
-		}
-		
+				
 		// the return Value from the doors seems to be like "[Location: http:....?uid=...]"
-		if (!finalTarget.startsWith("http")) {
+		if (finalTarget != null && !finalTarget.startsWith("http")) {
 			finalTarget = finalTarget.substring(finalTarget.indexOf("http"), finalTarget.length()-1);
-		}
+		} else
+			return false;
 		
 		HttpPut httpPut = new HttpPut(finalTarget);
 		httpPut.setEntity(entity);
@@ -128,12 +131,33 @@ public class UploadService extends IntentService {
 		}
 	}
 
-	private void InitializeComponents()
+	private boolean InitializeComponents()
 	{
 		cr = getContentResolver();
 		context = new BasicHttpContext();
 		mBuilder = new Notification.Builder(this);
 		mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		
+		
+		/* Get Settings Begin */
+		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
+		url = preferences.getString("webdav_url", null);
+		user = preferences.getString("webdav_user", null);
+		password = preferences.getString("webdav_password", null);
+		/* Get Settings End */
+
+		if (url == null) {
+			Log.d("dCache", "No URL set up.");
+			return false;
+		}
+
+		String filename = getFilePath(uri);
+
+		if (filename == null) {
+			Log.d("dCache", "fileName returned null");
+			return false;
+		}
+
 		
 		try {
 			httpClient = getClient();
@@ -144,13 +168,18 @@ public class UploadService extends IntentService {
 			Log.d("Unknown", String.format("Error: %s", e1.toString()));
 			e1.printStackTrace();
 		}
+		
+		return true;
 	}
 	
 	@Override
 	public void onCreate() {
 		
 		super.onCreate();
-		InitializeComponents();
+		if (!InitializeComponents()) {
+			// Something went wrong!
+			
+		}
 	}
 
 	private String getFilePath(Uri uriToFile) {
@@ -185,35 +214,19 @@ public class UploadService extends IntentService {
 		return filename;
 	}
 	
-	
+	private void NotificationCancel(String tag) {
+		mNotificationManager.cancel(tag, 0);
+		DavSyncOpenHelper helper = new DavSyncOpenHelper(this);
+		helper.removeUriFromQueue(uri.toString());
+	}
 	
 	@SuppressWarnings("deprecation")
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		
 		// Get Extras from Intend-Loader
-		final Uri uri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+		uri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
 		Log.d("davsyncs", "Uploading " + uri.toString());
-
-		
-		/* Get Settings Begin */
-		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
-		String webdavUrl = preferences.getString("webdav_url", null);
-		String webdavUser = preferences.getString("webdav_user", null);
-		String webdavPassword = preferences.getString("webdav_password", null);
-		/* Get Settings End */
-		
-		if (webdavUrl == null) {
-			Log.d("dCache", "No URL set up.");
-			return;
-		}
-
-		String filename = getFilePath(uri);
-
-		if (filename == null) {
-			Log.d("dCache", "fileName returned null");
-			return;
-		}
 
 		/* Setup Notification Manager Begin */
 		mBuilder.setContentTitle("Uploading to dCache server");
@@ -223,12 +236,14 @@ public class UploadService extends IntentService {
 		mBuilder.setProgress(100, 30, false);
 		/* Setup Notification Manager End */
 		
+		if (android.os.Build.VERSION.SDK_INT < 11) {
+		}
 		if (android.os.Build.VERSION.SDK_INT < 16)
 			mNotificationManager.notify(uri.toString(), 0,mBuilder.getNotification());
 		else
 			mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
 
-		HttpPut httpPut = new HttpPut(webdavUrl + filename);
+		HttpPut httpPut = new HttpPut(url + filename);
 
 		ParcelFileDescriptor fd;
 		InputStream stream;
@@ -256,9 +271,9 @@ public class UploadService extends IntentService {
 		
 		httpPut.setEntity(entity);
 
-		if (webdavUser != null && webdavPassword != null) {
+		if (user != null && password != null) {
 			AuthScope authScope = new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT);
-			UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(webdavUser, webdavPassword);
+			UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(user, password);
 						
 			httpClient.getCredentialsProvider().setCredentials(authScope, credentials);
 
@@ -300,7 +315,12 @@ public class UploadService extends IntentService {
 		
 		if (isRedirected) 
 		{
-			uploadFile();
+			if (uploadFile())
+			{
+				
+			} else {
+				// Uploading Failed
+			}
 			return;
 		}
 		
@@ -308,31 +328,28 @@ public class UploadService extends IntentService {
 			return;
 			
 		int status = response.getStatusLine().getStatusCode();
-			// 201 means the file was created.
-			// 200 and 204 mean it was stored but already existed.
-			
-			if (status == 201 || status == 200 || status == 204) {
 
-				mNotificationManager.cancel(uri.toString(), 0);
-				DavSyncOpenHelper helper = new DavSyncOpenHelper(this);
-				helper.removeUriFromQueue(uri.toString());
-				return;
-			}	
-		
-			
+		if (status == 201 || status == 200 || status == 204) {
+			NotificationCancel(uri.toString());
+			return;
+		}
+		else 
+		{
+			// Uploading Failed!
 			Log.d("davsyncs", "" + response.getStatusLine());
 			mBuilder.setContentText(filename + ": " + response.getStatusLine());
-
-		// XXX: It would be good to provide an option to try again.
-		// (or try it again automatically?)
-		// XXX: possibly we should re-queue the images in the database
-		mBuilder.setContentTitle("Error uploading to dCache server");
-		mBuilder.setProgress(0, 0, false);
-		mBuilder.setOngoing(false);
-		if (android.os.Build.VERSION.SDK_INT < 16)
-			mNotificationManager.notify(uri.toString(), 0,mBuilder.getNotification());
-		else
-			mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
+	
+			// XXX: It would be good to provide an option to try again.
+			// (or try it again automatically?)
+			// XXX: possibly we should re-queue the images in the database
+			mBuilder.setContentTitle("Error uploading to dCache server");
+			mBuilder.setProgress(0, 0, false);
+			mBuilder.setOngoing(false);
+			if (android.os.Build.VERSION.SDK_INT < 16)
+				mNotificationManager.notify(uri.toString(), 0,mBuilder.getNotification());
+			else
+				mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
+		}
 	}
 	
 	public DefaultHttpClient getClient() throws KeyStoreException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, IOException 
