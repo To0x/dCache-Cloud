@@ -61,15 +61,22 @@ import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 
+
 @SuppressLint("NewApi")
 public class UploadService extends IntentService {
+
+	// Defines begin //
+	private static boolean HTTPLOG = false;
+	// Defines End //
 	
 	private boolean isRedirected = false;
 	private String finalTarget = null;
 	private DefaultHttpClient httpClient = null;
-	private final HttpContext context = new BasicHttpContext();
+	private HttpContext context = null;
 	CountingInputStreamEntity entity = null;
-	private ContentResolver cr = getContentResolver();
+	private ContentResolver cr = null;
+	private Builder mBuilder = null;
+	private NotificationManager mNotificationManager = null;
 	
 	
 	
@@ -121,6 +128,31 @@ public class UploadService extends IntentService {
 		}
 	}
 
+	private void InitializeComponents()
+	{
+		cr = getContentResolver();
+		context = new BasicHttpContext();
+		mBuilder = new Notification.Builder(this);
+		mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		
+		try {
+			httpClient = getClient();
+		} catch (GeneralSecurityException e) {
+			Log.d("SECURITY", String.format("General Security Error: %s", e.toString()));
+			e.printStackTrace();
+		} catch (IOException e1) {
+			Log.d("Unknown", String.format("Error: %s", e1.toString()));
+			e1.printStackTrace();
+		}
+	}
+	
+	@Override
+	public void onCreate() {
+		
+		super.onCreate();
+		InitializeComponents();
+	}
+
 	private String getFilePath(Uri uriToFile) {
 		
 		String filename = null;
@@ -154,11 +186,10 @@ public class UploadService extends IntentService {
 	}
 	
 	
+	
 	@SuppressWarnings("deprecation")
 	@Override
 	protected void onHandleIntent(Intent intent) {
-		
-		
 		
 		// Get Extras from Intend-Loader
 		final Uri uri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
@@ -184,14 +215,12 @@ public class UploadService extends IntentService {
 			return;
 		}
 
-		/* Setup Notification Manager Begin */ 	
-		final Builder mBuilder = new Notification.Builder(this);
+		/* Setup Notification Manager Begin */
 		mBuilder.setContentTitle("Uploading to dCache server");
 		mBuilder.setContentText(filename);
 		mBuilder.setSmallIcon(android.R.drawable.ic_menu_upload);
 		mBuilder.setOngoing(true);
 		mBuilder.setProgress(100, 30, false);
-		final NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 		/* Setup Notification Manager End */
 		
 		if (android.os.Build.VERSION.SDK_INT < 16)
@@ -226,17 +255,6 @@ public class UploadService extends IntentService {
 		});
 		
 		httpPut.setEntity(entity);
-
-			try {
-				httpClient = getClient();
-			} catch (GeneralSecurityException e) {
-				Log.d("SECURITY", String.format("General Security Error: %s", e.toString()));
-				e.printStackTrace();
-			} catch (IOException e1) {
-				Log.d("Unknown", String.format("Error: %s", e1.toString()));
-				e1.printStackTrace();
-			}
-
 
 		if (webdavUser != null && webdavPassword != null) {
 			AuthScope authScope = new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT);
@@ -281,7 +299,10 @@ public class UploadService extends IntentService {
 		// Code will interrupt if there is a redirection!
 		
 		if (isRedirected) 
+		{
 			uploadFile();
+			return;
+		}
 		
 		if (response == null)
 			return;
@@ -314,31 +335,33 @@ public class UploadService extends IntentService {
 			mNotificationManager.notify(uri.toString(), 0, mBuilder.build());
 	}
 	
-	
-	
 	public DefaultHttpClient getClient() throws KeyStoreException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, IOException 
 	{ 
 		DefaultHttpClient ret = null;
 
-		/* LOGGING begin 
-		java.util.logging.Logger.getLogger("org.apache.http.wire").setLevel(java.util.logging.Level.FINEST);
-		java.util.logging.Logger.getLogger("org.apache.http.headers").setLevel(java.util.logging.Level.FINEST);
-
-		System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
-		System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
-		System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "debug");
-		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "debug");
-		System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.headers", "debug");
-		/* LOGGING end */
+		if (HTTPLOG) 
+		{
+			/* LOGGING begin 
+			java.util.logging.Logger.getLogger("org.apache.http.wire").setLevel(java.util.logging.Level.FINEST);
+			java.util.logging.Logger.getLogger("org.apache.http.headers").setLevel(java.util.logging.Level.FINEST);
+	
+			System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
+			System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
+			System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "debug");
+			System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "debug");
+			System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.headers", "debug");
+			/* LOGGING end */
+		}
 		
-		//sets up parameters
+		
+		//sets up parameters //
 	    HttpParams params = new BasicHttpParams();
 	    HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
 	    HttpProtocolParams.setContentCharset(params, "utf-8");
 	    //params.setBooleanParameter("http.protocol.expect-continue", false);
 	    params.setBooleanParameter("http.protocol.expect-continue", true);
 	
-	    
+	    // set up TrustStore for Certificates //
         KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
         trustStore.load(null, null);
 
