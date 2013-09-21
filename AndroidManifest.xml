@@ -18,15 +18,17 @@
         android:icon="@drawable/dcachebird2"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-        <service android:name="net.zekjur.davsync.UploadService" />
-        <service android:name="net.zekjur.davsync.DownloadService" />
+        <service android:name="de.desy.dCacheCloud.UploadService" />
+        <service android:name="de.desy.dCacheCloud.DownloadService" />
 
         <activity
-            android:name="net.zekjur.davsync.ServerViewActivity"
+            android:name="de.desy.dCacheCloud.ServerViewActivity"
             android:label="@string/app_name" >
         </activity>
+       
+        
         <activity
-            android:name="net.zekjur.davsync.ShareActivity"
+            android:name="de.desy.dCacheCloud.ShareActivity"
             android:excludeFromRecents="true"
             android:label="@string/title_activity_share"
             android:theme="@android:style/Theme.NoDisplay" >
@@ -36,7 +38,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
 
                 <data android:mimeType="*/*" />
-                <data android:mimeType="*/*" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
@@ -44,27 +45,25 @@
                 <category android:name="android.intent.category.DEFAULT" />
 
                 <data android:mimeType="*/*" />
-                <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
 
-        <receiver android:name="net.zekjur.davsync.NetworkReceiver" >
+        <receiver android:name="de.desy.dCacheCloud.NetworkReceiver" >
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
-        <receiver android:name="net.zekjur.davsync.NewMediaReceiver" >
+        <receiver android:name="de.desy.dCacheCloud.NewMediaReceiver" >
             <intent-filter>
                 <action android:name="android.hardware.action.NEW_PICTURE" />
                 <action android:name="android.hardware.action.NEW_VIDEO" />
 
                 <data android:mimeType="*/*" />
-                <data android:mimeType="*/*" />
             </intent-filter>
         </receiver>
 
         <activity
-            android:name="net.zekjur.davsync.SettingsActivity"
+            android:name="de.desy.dCacheCloud.SettingsActivity"
             android:label="@string/title_activity_settings" >
           <!-- <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -74,7 +73,7 @@
         </activity>
         
         <activity
-            android:name="net.zekjur.davsync.MainActivity"
+            android:name="de.desy.dCacheCloud.MainActivity"
             android:label="@string/title_activity_settings" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
