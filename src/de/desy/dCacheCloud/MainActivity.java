@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -46,8 +47,16 @@ public class MainActivity extends Activity {
             	Log.i("Hello!", "listView1 Clicked! YAY!");
             	if (position == 0)
             	{
+            		if (android.os.Build.VERSION.SDK_INT > 10) {
+            			StrictMode.ThreadPolicy policy = 
+            			        new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            			StrictMode.setThreadPolicy(policy);
+            		}
+            		
         		    Intent intent = new Intent(context, ServerViewActivity.class);
         		    startActivity(intent);
+
+
             	}
             	else
             	{

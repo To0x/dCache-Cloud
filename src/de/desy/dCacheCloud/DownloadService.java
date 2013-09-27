@@ -77,7 +77,7 @@ public class DownloadService extends IntentService {
         Resources res = this.getResources();
     	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    	
     	
-    	/* Setup Notification Manager Begin */ 	
+    	/* Setup Notification Manager Begin
 		final NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
         mBuilder.setContentIntent(contentIntent); //////////////////////////////////////////////////////////////////////////////////////////////
 		mBuilder.setContentTitle("Uploading to dCache server")
@@ -86,13 +86,13 @@ public class DownloadService extends IntentService {
         .setLargeIcon(BitmapFactory.decodeResource(res, R.drawable.ic_launcher))
         .setTicker(res.getString(R.string.hello_world))
 		.setOngoing(true)
-		.setProgress(100, 30, false)
+		.setProgress(100, 0, false)
         .setWhen(System.currentTimeMillis())
         .setAutoCancel(true)
         .setContentTitle(res.getString(R.string.app_name))
         .setContentText(res.getString(R.string.action_settings));
 		final NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		/* Setup Notification Manager End */
+		/* Setup Notification Manager End 
 		
 		final Notification n = mBuilder.build();
 
@@ -107,7 +107,7 @@ public class DownloadService extends IntentService {
 		else
 			mNotificationManager.notify(downloadFilePath, 100, mBuilder.build());
     	
-    	
+    	*/
         try {
             final URL url = new URL(downloadFilePath); 
             
@@ -129,11 +129,11 @@ public class DownloadService extends IntentService {
             /*Define InputStreams to read from the URLConnection. */
             InputStream is = ucon.getInputStream();
             BufferedInputStream bis = new BufferedInputStream(is);
-            
+            /*
             mBuilder.setProgress(100, 50, false);
     		mNotificationManager.notify(100, n);
                                    
-            /* Read bytes to the Buffer until there is nothing more to read(-1). */
+             Read bytes to the Buffer until there is nothing more to read(-1). */
             ByteArrayBuffer baf = new ByteArrayBuffer(50);
             int current = 0;
             while ((current = bis.read()) != -1) {
@@ -153,7 +153,7 @@ public class DownloadService extends IntentService {
         }
            
         
-        // When the loop is finished, updates the notification
+        /* When the loop is finished, updates the notification
 //        mBuilder.setContentText("Download complete")
         // Removes the progress bar
 //                .setProgress(0, 0, false);
@@ -161,7 +161,7 @@ public class DownloadService extends IntentService {
 		if (android.os.Build.VERSION.SDK_INT < 16)
 			mNotificationManager.notify(downloadFilePath, 0, mBuilder.getNotification());
 		else
-			mNotificationManager.notify(downloadFilePath, 0, mBuilder.build());
+			mNotificationManager.notify(downloadFilePath, 0, mBuilder.build());*/
     }
 }
 
