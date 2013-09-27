@@ -70,64 +70,6 @@ public class ServerViewActivity extends Activity {
             "<a[^>]*href=\"([^\"]*)\"[^>]*>(?:<[^>]+>)*?([^<>]+?)(?:<[^>]+>)*?</a>",
             Pattern.CASE_INSENSITIVE);
 
-	public DefaultHttpClient getClient() throws KeyStoreException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, IOException 
-	{ 
-		DefaultHttpClient ret = null;
-
-		if (HTTPLOG) 
-		{
-			/* LOGGING begin */
-			java.util.logging.Logger.getLogger("org.apache.http.wire").setLevel(java.util.logging.Level.FINEST);
-			java.util.logging.Logger.getLogger("org.apache.http.headers").setLevel(java.util.logging.Level.FINEST);
-	
-			System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
-			System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
-			System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "debug");
-			System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "debug");
-			System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.headers", "debug");
-			/* LOGGING end */
-		}
-		
-		
-		//sets up parameters //
-	    HttpParams params = new BasicHttpParams();
-	    HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
-	    HttpProtocolParams.setContentCharset(params, "utf-8");
-	    //params.setBooleanParameter("http.protocol.expect-continue", false);
-	    params.setBooleanParameter("http.protocol.expect-continue", true);
-	
-	    // set up TrustStore for Certificates //
-        KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        trustStore.load(null, null);
-
-		MySSLSocketFactory ssl = new MySSLSocketFactory(trustStore);
-		ssl.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-		
-	    SchemeRegistry registry = new SchemeRegistry();
-	    registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
-	    registry.register(new Scheme("https", ssl, 443));
-	    
-	    ThreadSafeClientConnManager manager = new ThreadSafeClientConnManager(params, registry);
-	    ret = new DefaultHttpClient(manager, params);
-	    return ret;
-	}
-	
-	private void setCredentials(String user, String password) {
-		if (user != null && password != null) {
-			AuthScope authScope = new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT);
-			UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(user, password);
-						
-			httpClient.getCredentialsProvider().setCredentials(authScope, credentials);
-
-			try {
-				httpGet.addHeader(new BasicScheme().authenticate(credentials, httpGet));
-			} catch (AuthenticationException e1) {
-				e1.printStackTrace();
-				return;
-			}
-		}
-	}
-	
     public List retrieveListing(URL url, String htmlText, boolean includeFiles, boolean includeDirectories)
             throws IOException {
         List urlList = new ArrayList();
@@ -216,7 +158,7 @@ public class ServerViewActivity extends Activity {
 		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
 		
 		try {
-			httpClient = getClient();
+			httpClient = ServerHelper.getClient();
 		} catch (GeneralSecurityException e) {
 			Log.d("SECURITY", String.format("General Security Error: %s", e.toString()));
 			e.printStackTrace();
@@ -254,7 +196,7 @@ public class ServerViewActivity extends Activity {
 		user = preferences.getString("webdav_user", null);
 		String password = preferences.getString("webdav_password", null);
 		
-		setCredentials(user, password);
+		ServerHelper.setCredentials(httpClient, httpGet, user, password);
 		
 		String response = null;
 		

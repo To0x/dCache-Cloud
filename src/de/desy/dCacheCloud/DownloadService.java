@@ -1,42 +1,37 @@
 package de.desy.dCacheCloud;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
+import java.net.URI;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-import org.apache.http.util.ByteArrayBuffer;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.DefaultRedirectHandler;
+import org.apache.http.protocol.HttpContext;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Dialog;
 import android.app.IntentService;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.Notification.Builder;
-import android.app.PendingIntent;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
-import android.graphics.BitmapFactory;
-import android.os.Bundle;
+import android.content.SharedPreferences;
 import android.os.Environment;
-import android.os.SystemClock;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.Window;
-import android.widget.Button;
 import android.widget.ProgressBar;
-import android.widget.RemoteViews;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class DownloadService extends IntentService {
 		
@@ -45,12 +40,59 @@ public class DownloadService extends IntentService {
 	int downloadSize = 0;
 	int totalSize = 0;
 	TextView cur_val;
-	//String downloadFilePath = "https://cloud.dcache.org:2880/s0535279/test.pdf";
 	String downloadFilePath; // = "https://fbcdn-sphotos-e-a.akamaihd.net/hphotos-ak-frc1/887175_498243270233831_1603221832_o.jpg";
-	String fileName;
+	String fileName = null;
+	private NotificationManager mNotificationManager = null;
+	private HttpGet httpGet = null;
+	private DefaultHttpClient httpClient = null;
+	private boolean isRedirected = false;
 	
-	CountingInputStreamEntity entity = null;
-	 
+	private List<String> target = new ArrayList<String>();
+	
+	private Builder NotificationFailurePrepare(String text) {
+		
+		Builder mBuilder = new Builder(this);
+		
+		mBuilder.setContentText(fileName + ": " + text);
+		mBuilder.setContentTitle("Error uploading to dCache server");
+		mBuilder.setProgress(0, 0, false);
+		mBuilder.setOngoing(false);
+		
+		return mBuilder;
+	}
+	
+	private Builder NotificationUploadPrepare(String text){
+		
+		Builder mBuilder = new Builder(this);
+		
+		/* Setup Notification Manager Begin */
+		mBuilder.setContentTitle("Download from dCache server");
+		mBuilder.setContentText(text);
+		mBuilder.setSmallIcon(android.R.drawable.ic_menu_upload);
+		mBuilder.setOngoing(true);
+		mBuilder.setProgress(100, 0, false);
+		/* Setup Notification Manager End */
+		
+		return mBuilder;
+	}
+	
+	@SuppressWarnings("deprecation")
+	private void NotificationNotify(String tag, Builder mBuilder) {
+		if (android.os.Build.VERSION.SDK_INT < 11) {
+			// Not supported
+		}
+		if (android.os.Build.VERSION.SDK_INT < 16)
+			mNotificationManager.notify(tag, 0,mBuilder.getNotification());
+		else
+			mNotificationManager.notify(tag, 0, mBuilder.build());
+	}
+		
+	private void NotificationCancel(String tag) {
+		mNotificationManager.cancel(tag, 0);
+		DavSyncOpenHelper helper = new DavSyncOpenHelper(this);
+	}
+	
+	
 	public DownloadService() {
 		super("DownloadService");
 	}
@@ -60,7 +102,7 @@ public class DownloadService extends IntentService {
     	Log.i("2.", "onstartcommand");
 	    downloadFilePath = (String) intent.getExtras().get("url"); 
 	    fileName = (String) intent.getExtras().get("filename");
-		downloadFile();
+		InitializeComponents();
 	    return START_REDELIVER_INTENT;
 	}
 	
@@ -68,100 +110,117 @@ public class DownloadService extends IntentService {
     	Log.i("2.", "onhandleintent");
 	}
 	
-    private void downloadFile(){
-    	Log.i("Yeah!", "DU BIST IN DOWNLOADFILE GELANDET!");
-    	
-    	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        PendingIntent contentIntent = PendingIntent.getActivity(this, 100, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-        Resources res = this.getResources();
-    	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    	
-    	
-    	/* Setup Notification Manager Begin
-		final NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
-        mBuilder.setContentIntent(contentIntent); //////////////////////////////////////////////////////////////////////////////////////////////
-		mBuilder.setContentTitle("Uploading to dCache server")
-		.setContentText(fileName)
-		.setSmallIcon(android.R.drawable.ic_menu_upload)
-        .setLargeIcon(BitmapFactory.decodeResource(res, R.drawable.ic_launcher))
-        .setTicker(res.getString(R.string.hello_world))
-		.setOngoing(true)
-		.setProgress(100, 0, false)
-        .setWhen(System.currentTimeMillis())
-        .setAutoCancel(true)
-        .setContentTitle(res.getString(R.string.app_name))
-        .setContentText(res.getString(R.string.action_settings));
-		final NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		/* Setup Notification Manager End 
+	private boolean downloadFile() throws IllegalStateException, IOException {
 		
-		final Notification n = mBuilder.build();
-
-						
-		mNotificationManager.notify(100, n);
+		isRedirected = false;
 		
-        mBuilder.setProgress(100, 50, false);
-		mNotificationManager.notify(100, n);
+		// the return Value from the doors seems to be like "[Location: http:....?uid=...]"
+		String finalTarget = target.get(target.size()-1);
+		if (finalTarget != null && !finalTarget.startsWith("http")) {
+			finalTarget = finalTarget.substring(finalTarget.indexOf("http"), finalTarget.length()-1);
+			target.set(target.size()-1, finalTarget);
+		}
 
-		if (android.os.Build.VERSION.SDK_INT < 16)
-			mNotificationManager.notify(downloadFilePath, 100, mBuilder.getNotification());
-		else
-			mNotificationManager.notify(downloadFilePath, 100, mBuilder.build());
-    	
-    	*/
-        try {
-            final URL url = new URL(downloadFilePath); 
+		httpGet.setURI(URI.create(finalTarget));
+		
+        HttpResponse response = null;
+		try {
+			response = httpClient.execute(httpGet);
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}    
+        
+		if (isRedirected) {
+			downloadFile();
+			return true;
+		}
+		
+        final Builder mBuilder = NotificationUploadPrepare(fileName);
+		
+        InputStream in = response.getEntity().getContent();
+        Long fileSize = response.getEntity().getContentLength();
+        FileOutputStream fos = new FileOutputStream(new File(Environment.getExternalStorageDirectory() + "/dCacheCloud/" + fileName));
+        
+        byte[] buffer = new byte[4096];
+        int length;
+        long bytesWritten = 0;
+        int lastPercent = 0;
+        
+        while((length = in.read(buffer)) > 0) {
+            fos.write(buffer, 0, length);
+            bytesWritten += length;
             
+			int percent = (int) ((bytesWritten * 100) / fileSize);
+			if (lastPercent != percent) {
+				mBuilder.setProgress(100, percent, false);
+				NotificationNotify(fileName, mBuilder);
+
+				lastPercent = percent;
+			}
+            
+        }
+        
+        mBuilder.setOngoing(false);
+        NotificationNotify(fileName, mBuilder);
+        /* end Download */
+        
+        return false;
+	}
+	
+    private void InitializeComponents(){    	
+        try {
+    		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
+    		String user = preferences.getString("webdav_user", null);
+    		String password = preferences.getString("webdav_password", null);
+            
+    		mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+    		
             File folder = new File(Environment.getExternalStorageDirectory() + "/dCacheCloud/");
             if (!folder.exists()) {
                 folder.mkdir();
             }
             File file = new File(Environment.getExternalStorageDirectory() + "/dCacheCloud/" + fileName);             
-                                             
-            long startTime = System.currentTimeMillis();
-            Log.d("Dateiname:" + fileName, "Download von " + url + " startet");
-
-            /* Open a connection to that URL. */
-            URLConnection ucon = url.openConnection();            
             
-            /* Get the filesize to display the percentage in the notification bar */
-            totalSize = ucon.getContentLength();
             
-            /*Define InputStreams to read from the URLConnection. */
-            InputStream is = ucon.getInputStream();
-            BufferedInputStream bis = new BufferedInputStream(is);
-            /*
-            mBuilder.setProgress(100, 50, false);
-    		mNotificationManager.notify(100, n);
-                                   
-             Read bytes to the Buffer until there is nothing more to read(-1). */
-            ByteArrayBuffer baf = new ByteArrayBuffer(50);
-            int current = 0;
-            while ((current = bis.read()) != -1) {
-                downloadSize += current;
-                baf.append((byte) current);   
-                               
-            }
+            httpGet = new HttpGet(downloadFilePath);
             
-            /* Convert the Bytes read to a String. */
-            FileOutputStream fos = new FileOutputStream(file);
-            fos.write(baf.toByteArray());
-            fos.close();
-            Log.d("Downloadzeit", ((System.currentTimeMillis() - startTime) / 1000) + "s");
-
-        } catch (IOException e) {
-        	Log.d("Error", e.toString());
+            try {
+				httpClient = ServerHelper.getClient();
+			} catch (KeyManagementException e) {
+				e.printStackTrace();
+			} catch (UnrecoverableKeyException e) {
+				e.printStackTrace();
+			} catch (KeyStoreException e) {
+				e.printStackTrace();
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+			} catch (CertificateException e) {
+				e.printStackTrace();
+			}
+            
+    		httpClient.setRedirectHandler(new DefaultRedirectHandler() {	
+    			@Override
+    			public URI getLocationURI(HttpResponse response, HttpContext contet) throws org.apache.http.ProtocolException {
+    				
+    				Log.d("Rederection!!: ", Arrays.toString(response.getHeaders("Location")));
+    				System.out.println(Arrays.toString(response.getHeaders("Location")));
+    				
+    				target.add(Arrays.toString(response.getHeaders("Location")));
+    				isRedirected = true;
+    				return super.getLocationURI(response, contet);
+    			}
+    			
+    		});
+            
+    		ServerHelper.setCredentials(httpClient, httpGet, user, password);
+    		target.add(downloadFilePath);
+    		downloadFile();
         }
-           
-        
-        /* When the loop is finished, updates the notification
-//        mBuilder.setContentText("Download complete")
-        // Removes the progress bar
-//                .setProgress(0, 0, false);
-        mNotificationManager.notify(100, mBuilder.build());
-		if (android.os.Build.VERSION.SDK_INT < 16)
-			mNotificationManager.notify(downloadFilePath, 0, mBuilder.getNotification());
-		else
-			mNotificationManager.notify(downloadFilePath, 0, mBuilder.build());*/
+        catch (Exception e) {
+        	e.printStackTrace();
+        }
     }
 }
 

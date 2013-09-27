@@ -162,7 +162,7 @@ public class UploadService extends IntentService {
 		setFileHandling();
 		
 		try {
-			httpClient = getClient();
+			httpClient = ServerHelper.getClient();
 		} catch (GeneralSecurityException e) {
 			Log.d("SECURITY", String.format("General Security Error: %s", e.toString()));
 			e.printStackTrace();
@@ -187,7 +187,7 @@ public class UploadService extends IntentService {
 		
 		httpPut = new HttpPut();
 		httpPut.setEntity(entity);
-		setCredentials(user, password);
+		ServerHelper.setCredentials(httpClient, httpPut, user, password);
 		
 		return true;
 	}
@@ -294,22 +294,6 @@ public class UploadService extends IntentService {
 		helper.removeUriFromQueue(fileUri.toString());
 	}
 	
-	private void setCredentials(String user, String password) {
-		if (user != null && password != null) {
-			AuthScope authScope = new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT);
-			UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(user, password);
-						
-			httpClient.getCredentialsProvider().setCredentials(authScope, credentials);
-
-			try {
-				httpPut.addHeader(new BasicScheme().authenticate(credentials, httpPut));
-			} catch (AuthenticationException e1) {
-				e1.printStackTrace();
-				return;
-			}
-		}
-	}
-	
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		
@@ -317,47 +301,5 @@ public class UploadService extends IntentService {
 		while (!InitializeComponents(intent) && retryCount-- != 0);
 		
 		uploadFile();
-	}
-	
-	public DefaultHttpClient getClient() throws KeyStoreException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, IOException 
-	{ 
-		DefaultHttpClient ret = null;
-
-		if (HTTPLOG) 
-		{
-			/* LOGGING begin */
-			java.util.logging.Logger.getLogger("org.apache.http.wire").setLevel(java.util.logging.Level.FINEST);
-			java.util.logging.Logger.getLogger("org.apache.http.headers").setLevel(java.util.logging.Level.FINEST);
-	
-			System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
-			System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
-			System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "debug");
-			System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "debug");
-			System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.headers", "debug");
-			/* LOGGING end */
-		}
-		
-		
-		//sets up parameters //
-	    HttpParams params = new BasicHttpParams();
-	    HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
-	    HttpProtocolParams.setContentCharset(params, "utf-8");
-	    //params.setBooleanParameter("http.protocol.expect-continue", false);
-	    params.setBooleanParameter("http.protocol.expect-continue", true);
-	
-	    // set up TrustStore for Certificates //
-        KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        trustStore.load(null, null);
-
-		MySSLSocketFactory ssl = new MySSLSocketFactory(trustStore);
-		ssl.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-		
-	    SchemeRegistry registry = new SchemeRegistry();
-	    registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
-	    registry.register(new Scheme("https", ssl, 443));
-	    
-	    ThreadSafeClientConnManager manager = new ThreadSafeClientConnManager(params, registry);
-	    ret = new DefaultHttpClient(manager, params);
-	    return ret;
 	}
 }
