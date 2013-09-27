@@ -66,16 +66,40 @@ public class ServerViewActivity extends Activity {
  
 	private DefaultHttpClient httpClient = null;
 	
+	// http://www.mkyong.com/regular-expressions/how-to-extract-html-links-with-regular-expression/
+	// new expression for file-extracting
+	
     private static final Pattern PATTERN = Pattern.compile(
             "<a[^>]*href=\"([^\"]*)\"[^>]*>(?:<[^>]+>)*?([^<>]+?)(?:<[^>]+>)*?</a>",
             Pattern.CASE_INSENSITIVE);
+    
+	private static final Pattern HTML_A_TAG_PATTERN = Pattern.compile("(?i)<a([^>]+)>(.+?)</a>");
+	private static final Pattern HTML_A_HREF_TAG_PATTERN = Pattern.compile(
+		"\\s*(?i)href\\s*=\\s*(\"([^\"]*\")|'[^']*'|([^'\">\\s]+))");
 
     public List retrieveListing(URL url, String htmlText, boolean includeFiles, boolean includeDirectories)
             throws IOException {
         List urlList = new ArrayList();
 
-        Matcher matcher = PATTERN.matcher(htmlText);
+        Matcher matcherTag = HTML_A_TAG_PATTERN.matcher(htmlText);
+        
+        
+        while (matcherTag.find()) {
+        	String href = matcherTag.group(1);
+        	String linkText = matcherTag.group(2);
+        	
+        	Matcher matcherLink = HTML_A_HREF_TAG_PATTERN.matcher(href);
+        	
+        	while (matcherLink.find()) {
+        		String link = matcherLink.group(1);
+        	}
+        	
+        }
+        
 
+        Matcher matcher = PATTERN.matcher(htmlText);
+        
+        
         while (matcher.find()) {
             // get the href text and the displayed text
             String href = matcher.group(1);
