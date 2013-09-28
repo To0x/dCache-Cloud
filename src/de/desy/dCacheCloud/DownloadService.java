@@ -23,7 +23,9 @@ import org.apache.http.protocol.HttpContext;
 
 import android.app.Dialog;
 import android.app.IntentService;
-import android.app.Notification.Builder;
+import android.support.v4.app.NotificationCompat;
+//import android.app.Notification.Builder;
+import android.support.v4.app.NotificationCompat.Builder;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
@@ -40,7 +42,7 @@ public class DownloadService extends IntentService {
 	int downloadSize = 0;
 	int totalSize = 0;
 	TextView cur_val;
-	String downloadFilePath; // = "https://fbcdn-sphotos-e-a.akamaihd.net/hphotos-ak-frc1/887175_498243270233831_1603221832_o.jpg";
+	String downloadFilePath;
 	String fileName = null;
 	private NotificationManager mNotificationManager = null;
 	private HttpGet httpGet = null;
@@ -61,9 +63,9 @@ public class DownloadService extends IntentService {
 		return mBuilder;
 	}
 	
-	private Builder NotificationUploadPrepare(String text){
+	private NotificationCompat.Builder NotificationUploadPrepare(String text){
 		
-		Builder mBuilder = new Builder(this);
+		NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
 		
 		/* Setup Notification Manager Begin */
 		mBuilder.setContentTitle("Download from dCache server");
@@ -91,8 +93,7 @@ public class DownloadService extends IntentService {
 		mNotificationManager.cancel(tag, 0);
 		DavSyncOpenHelper helper = new DavSyncOpenHelper(this);
 	}
-	
-	
+		
 	public DownloadService() {
 		super("DownloadService");
 	}
@@ -156,10 +157,8 @@ public class DownloadService extends IntentService {
 			if (lastPercent != percent) {
 				mBuilder.setProgress(100, percent, false);
 				NotificationNotify(fileName, mBuilder);
-
 				lastPercent = percent;
-			}
-            
+			}            
         }
         
         mBuilder.setOngoing(false);
@@ -182,7 +181,6 @@ public class DownloadService extends IntentService {
                 folder.mkdir();
             }
             File file = new File(Environment.getExternalStorageDirectory() + "/dCacheCloud/" + fileName);             
-            
             
             httpGet = new HttpGet(downloadFilePath);
             

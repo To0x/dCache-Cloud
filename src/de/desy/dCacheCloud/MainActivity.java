@@ -11,6 +11,7 @@ import java.util.Vector;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -54,8 +55,13 @@ public class MainActivity extends Activity {
             		}
             		
         		    Intent intent = new Intent(context, ServerViewActivity.class);
+            		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
+	        		try {
+						intent.putExtra("url", new URL(preferences.getString("webdav_url", null)));
+					} catch (MalformedURLException e) {
+						e.printStackTrace();
+					}
         		    startActivity(intent);
-
 
             	}
             	else
