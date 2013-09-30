@@ -12,6 +12,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -23,12 +25,13 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.Toast;
 import net.zekjur.davsync.R;
  
 public class MainActivity extends Activity {
  
 	private ListView listView1;
- 
+ 	
 	public void onCreate(Bundle savedInstanceState) {
 		final Context context = this;
  
@@ -48,21 +51,25 @@ public class MainActivity extends Activity {
             	Log.i("Hello!", "listView1 Clicked! YAY!");
             	if (position == 0)
             	{
-            		if (android.os.Build.VERSION.SDK_INT > 10) {
-            			StrictMode.ThreadPolicy policy = 
-            			        new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            			StrictMode.setThreadPolicy(policy);
+            		if (isNetworkConnected()) {
+	            		if (android.os.Build.VERSION.SDK_INT > 10) {
+	            			StrictMode.ThreadPolicy policy = 
+	            			        new StrictMode.ThreadPolicy.Builder().permitAll().build();
+	            			StrictMode.setThreadPolicy(policy);
+	            		}
+	            		
+	        		    Intent intent = new Intent(context, ServerViewActivity.class);
+	            		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
+		        		try {
+							intent.putExtra("url", new URL(preferences.getString("webdav_url", null)));
+						} catch (MalformedURLException e) {
+							e.printStackTrace();
+						}
+	        		    startActivity(intent);
             		}
-            		
-        		    Intent intent = new Intent(context, ServerViewActivity.class);
-            		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
-	        		try {
-						intent.putExtra("url", new URL(preferences.getString("webdav_url", null)));
-					} catch (MalformedURLException e) {
-						e.printStackTrace();
-					}
-        		    startActivity(intent);
-
+            		else {
+            			Toast.makeText(getApplicationContext(), "You are not connected to the internet!", Toast.LENGTH_LONG).show();
+            		}
             	}
             	else
             	{
@@ -72,4 +79,10 @@ public class MainActivity extends Activity {
             }
         });		
 	} 
+	
+    public boolean isNetworkConnected() {
+        final ConnectivityManager conMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        final NetworkInfo activeNetwork = conMgr.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.getState() == NetworkInfo.State.CONNECTED;
+   }
 }
