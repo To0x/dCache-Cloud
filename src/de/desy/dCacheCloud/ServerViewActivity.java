@@ -200,12 +200,16 @@ public class ServerViewActivity extends Activity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             	
-            	String currentItem = parent.getItemAtPosition(position).toString().replaceAll(" ", "%20");            	
+            	String currentItem = parent.getItemAtPosition(position).toString();            	
             	if (!currentItem.substring(currentItem.length() - 1).equals("/")) { // Wenn das angeklickte Item kein Ordner ist...
-	            	Intent intent = new Intent();
+	            	/*Intent intent = new Intent();
 	            	intent.setAction(android.content.Intent.ACTION_VIEW);
-	            	intent.setData(Uri.parse((url1.toString() + currentItem)));
-	            	startActivity(intent); 	            	
+	            	intent.setData(Uri.parse((url1.toString() + currentItem.replaceAll(" ", "%20"))));
+	            	startActivity(intent);*/ 	            	
+	        		Intent intent = new Intent(context, DownloadService.class);
+	        		intent.putExtra("url", url1 + currentItem.replaceAll(" ", "%20"));
+	        		intent.putExtra("filename", currentItem);
+	        		startService(intent);
             	}
             	else { // ... wenn das angeklickte Item ein Ordner ist
             		/* neue ServerViewActivity */
@@ -225,7 +229,7 @@ public class ServerViewActivity extends Activity {
             }
         });
         
-        listView.setOnItemLongClickListener(new android.widget.AdapterView.OnItemLongClickListener()
+        /*listView.setOnItemLongClickListener(new android.widget.AdapterView.OnItemLongClickListener()
         {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
@@ -243,7 +247,7 @@ public class ServerViewActivity extends Activity {
             	}
                 return true;
             }
-        });		
+        });	*/	
 	}
 	
 	public void onCreate(Bundle savedInstanceState) {
