@@ -23,7 +23,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
-import net.zekjur.davsync.R;
+import de.desy.dCacheCloud.R;
  
 public class MainActivity extends Activity {
  

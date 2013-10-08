@@ -4,7 +4,7 @@ import java.util.List;
 
 import de.desy.dCacheCloud.DownloadService;
 
-import net.zekjur.davsync.R;
+import de.desy.dCacheCloud.R;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -105,6 +105,7 @@ public class SettingsActivity extends PreferenceActivity implements OnSharedPref
 			webdavUrlPreference.setSummary(sharedPreferences.getString("webdav_url", ""));
 		} else if (key.equals("webdav_user")) {
 			webdavUserPreference.setSummary(sharedPreferences.getString("webdav_user", ""));
+			webdavUrlPreference.setSummary(String.format("%s%s/", sharedPreferences.getString("webdav_url", ""), sharedPreferences.getString("webdav_user", "")));
 		}
 		else if (key.equals("webdav_password")) {
 			if (sharedPreferences.getString("webdav_password", "").equals("")) {
@@ -131,10 +132,12 @@ public class SettingsActivity extends PreferenceActivity implements OnSharedPref
 
 		addPreferencesFromResource(R.xml.pref_general);
 		// Add 'data and sync' preferences, and a corresponding header.
+		/* More Settings
 		PreferenceCategory fakeHeader = new PreferenceCategory(this);
 		fakeHeader.setTitle(R.string.pref_header_autosync);
 		getPreferenceScreen().addPreference(fakeHeader);
 		addPreferencesFromResource(R.xml.pref_autosync);
+		*/
 	}
 
 	/** {@inheritDoc} */
@@ -180,7 +183,7 @@ public class SettingsActivity extends PreferenceActivity implements OnSharedPref
 		@Override
 		public void onCreate(Bundle savedInstanceState) {
 			super.onCreate(savedInstanceState);
-			addPreferencesFromResource(R.xml.pref_autosync);
+			//addPreferencesFromResource(R.xml.pref_autosync);
 		}
 	}
 

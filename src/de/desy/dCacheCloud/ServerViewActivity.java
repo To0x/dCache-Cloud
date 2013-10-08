@@ -10,7 +10,7 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.zekjur.davsync.R;
+import de.desy.dCacheCloud.R;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;

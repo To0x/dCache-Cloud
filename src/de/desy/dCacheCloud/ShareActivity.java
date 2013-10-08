@@ -2,7 +2,7 @@ package de.desy.dCacheCloud;
 
 import java.util.ArrayList;
 
-import net.zekjur.davsync.R;
+import de.desy.dCacheCloud.R;
 
 import android.app.Activity;
 import android.content.Intent;

@@ -5,5 +5,6 @@
     <string name="action_settings">dCache Cloud Settings</string>
     <string name="hello_world">Hello world!</string>
     <string name="title_activity_share">dCache Cloud</string>
+    <string name="dcache_url">https://cloud.dcache.org/</string>
 
 </resources>
