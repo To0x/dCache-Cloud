@@ -162,7 +162,7 @@ public class ServerViewActivity extends Activity {
 	    };
 		/* test ende */
 		
-		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
+		SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
 		httpGet = new HttpGet(url1.toString());
 		user = preferences.getString("webdav_user", null);
 		String password = preferences.getString("webdav_password", null);

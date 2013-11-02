@@ -20,7 +20,7 @@ public class NewMediaReceiver extends BroadcastReceiver {
 
 		if (!isNewPic && !isNewVid) return;
 
-		SharedPreferences preferences = context.getSharedPreferences("net.zekjur.davsync_preferences",
+		SharedPreferences preferences = context.getSharedPreferences("de.desy.dCacheCloud_preferences",
 				Context.MODE_PRIVATE);
 
 		if (isNewPic && !preferences.getBoolean("auto_sync_camera_pictures", true)) {

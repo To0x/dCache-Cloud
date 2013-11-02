@@ -105,7 +105,8 @@ public class SettingsActivity extends PreferenceActivity implements OnSharedPref
 			webdavUrlPreference.setSummary(sharedPreferences.getString("webdav_url", ""));
 		} else if (key.equals("webdav_user")) {
 			webdavUserPreference.setSummary(sharedPreferences.getString("webdav_user", ""));
-			webdavUrlPreference.setSummary(String.format("%s%s/", sharedPreferences.getString("webdav_url", ""), sharedPreferences.getString("webdav_user", "")));
+			//webdavUrlPreference.setSummary(String.format("%s%s/", sharedPreferences.getString("webdav_url", ""), sharedPreferences.getString("webdav_user", "")));
+			webdavUrlPreference.setSummary(String.format("%s", sharedPreferences.getString("webdav_url", "")));
 		}
 		else if (key.equals("webdav_password")) {
 			if (sharedPreferences.getString("webdav_password", "").equals("")) {

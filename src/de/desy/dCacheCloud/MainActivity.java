@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
 	            		}
 	            		
 	        		    Intent intent = new Intent(context, ServerViewActivity.class);
-	            		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
+	        		    SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
 		        		try {
 							intent.putExtra("url", new URL(preferences.getString("webdav_url", null)));
 						} catch (MalformedURLException e) {

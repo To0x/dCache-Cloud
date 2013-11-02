@@ -139,7 +139,7 @@ public class UploadService extends IntentService {
 		
 		
 		/* Get Settings Begin */
-		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
+		SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
 		target.add(preferences.getString("webdav_url", null));
 		String user = preferences.getString("webdav_user", null);
 		String password = preferences.getString("webdav_password", null);

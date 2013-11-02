@@ -28,7 +28,7 @@ public class NetworkReceiver extends BroadcastReceiver {
 			return;
 		}
 
-		SharedPreferences preferences = context.getSharedPreferences("net.zekjur.davsync_preferences",
+		SharedPreferences preferences = context.getSharedPreferences("de.desy.dCacheCloud_preferences",
 				Context.MODE_PRIVATE);
 
 		boolean syncOnWifiOnly = preferences.getBoolean("auto_sync_on_wifi_only", true);

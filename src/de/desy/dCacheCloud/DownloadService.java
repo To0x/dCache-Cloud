@@ -170,7 +170,7 @@ public class DownloadService extends IntentService {
 	
     private void InitializeComponents(){    	
         try {
-    		SharedPreferences preferences = getSharedPreferences("net.zekjur.davsync_preferences", Context.MODE_PRIVATE);
+    		SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
     		String user = preferences.getString("webdav_user", null);
     		String password = preferences.getString("webdav_password", null);
             
