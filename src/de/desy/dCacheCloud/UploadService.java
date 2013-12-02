@@ -3,7 +3,10 @@ package de.desy.dCacheCloud;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -49,6 +52,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -97,7 +101,19 @@ public class UploadService extends IntentService {
 			target.set(target.size()-1, finalTarget);
 		}
 
-		httpPut.setURI(URI.create(finalTarget));
+		URI uri = null;
+		try {
+		URL url = new URL(finalTarget);
+			uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+		} catch (URISyntaxException e1) {
+			e1.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+
+		//httpPut.setURI(URI.create(finalTarget));
+		httpPut.setURI(uri);
+		
 		HttpResponse response = null;
 		try {
 			response = httpClient.execute(httpPut, context);
@@ -119,14 +135,16 @@ public class UploadService extends IntentService {
 		// 201 means the file was created.
 		// 200 and 204 mean it was stored but already existed.
 		
-		if (status == 201 || status == 200 || status == 204) {
-			NotificationCancel(fileUri.toString());
-		}
-		else 
-		{
-			// Uploading Failed!
-			Log.d("davsyncs", "" + response.getStatusLine());
-			NotificationNotify(fileUri.toString(),NotificationFailurePrepare(response.getStatusLine().toString()));
+		if (android.os.Build.VERSION.SDK_INT >= 11) {
+			if (status == 201 || status == 200 || status == 204) {
+				NotificationCancel(fileUri.toString());
+			}
+			else 
+			{
+				// Uploading Failed!
+				Log.d("davsyncs", "" + response.getStatusLine());
+				NotificationNotify(fileUri.toString(),NotificationFailurePrepare(response.getStatusLine().toString()));
+			}
 		}
 		return true;
 	}
@@ -135,8 +153,10 @@ public class UploadService extends IntentService {
 	{
 		cr = getContentResolver();
 		context = new BasicHttpContext();
-		mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 		
+		if (android.os.Build.VERSION.SDK_INT >= 11) {
+			mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		}
 		
 		/* Get Settings Begin */
 		SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
@@ -257,7 +277,7 @@ public class UploadService extends IntentService {
 			// Not supported
 		}
 		if (android.os.Build.VERSION.SDK_INT < 16)
-			mNotificationManager.notify(tag, 0,mBuilder.getNotification());
+			mNotificationManager.notify(tag, 0, mBuilder.getNotification());
 		else
 			mNotificationManager.notify(tag, 0, mBuilder.build());
 	}
@@ -274,18 +294,20 @@ public class UploadService extends IntentService {
 			return;
 		}
 		
-		final Builder mBuilder = NotificationUploadPrepare(filename);
-		NotificationNotify(fileUri.toString(), mBuilder);
-		
-		entity = new CountingInputStreamEntity(stream, fd.getStatSize());
-		
-		entity.setUploadListener(new UploadListener() {
-			@Override
-			public void onChange(int percent) {
-				mBuilder.setProgress(100, percent, false);
-				NotificationNotify(fileUri.toString(), mBuilder);
-			}
-		});
+		if (android.os.Build.VERSION.SDK_INT >= 11) {		
+			final Builder mBuilder = NotificationUploadPrepare(filename);
+			NotificationNotify(fileUri.toString(), mBuilder);
+			
+			entity = new CountingInputStreamEntity(stream, fd.getStatSize());
+			
+			entity.setUploadListener(new UploadListener() {
+				@Override
+				public void onChange(int percent) {
+					mBuilder.setProgress(100, percent, false);
+					NotificationNotify(fileUri.toString(), mBuilder);
+				}
+			});
+		}
 	}
 	
 	private void NotificationCancel(String tag) {
