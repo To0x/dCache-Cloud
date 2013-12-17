@@ -51,21 +51,31 @@ public class MainActivity extends Activity {
             	Log.i("Hello!", "listView1 Clicked! YAY!");
             	if (position == 0)
             	{
+            		
+            		SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
+            		String user = preferences.getString("webdav_user", null);
+            		String password = preferences.getString("webdav_password", null);
+            		
             		if (isNetworkConnected()) {
-	            		if (android.os.Build.VERSION.SDK_INT > 10) {
-	            			StrictMode.ThreadPolicy policy = 
-	            			        new StrictMode.ThreadPolicy.Builder().permitAll().build();
-	            			StrictMode.setThreadPolicy(policy);
-	            		}
-	            		
-	        		    Intent intent = new Intent(context, ServerViewActivity.class);
-	        		    SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
-		        		try {
-							intent.putExtra("url", new URL(preferences.getString("webdav_url", null)));
-						} catch (MalformedURLException e) {
-							e.printStackTrace();
-						}
-	        		    startActivity(intent);
+            			if (user != null && user != "" && password != null && password != "") {
+			
+		            		if (android.os.Build.VERSION.SDK_INT > 10) {
+		            			StrictMode.ThreadPolicy policy = 
+		            			        new StrictMode.ThreadPolicy.Builder().permitAll().build();
+		            			StrictMode.setThreadPolicy(policy);
+		            		}
+		            		
+		        		    Intent intent = new Intent(context, ServerViewActivity.class);
+			        		try {
+								intent.putExtra("url", new URL(preferences.getString("webdav_url", null)));
+							} catch (MalformedURLException e) {
+								e.printStackTrace();
+							}
+		        		    startActivity(intent);
+            			}
+            			else {
+                			Toast.makeText(getApplicationContext(), "Please fill in your user data before trying to use the dCache Cloud!", Toast.LENGTH_LONG).show();            				
+            			}
             		}
             		else {
             			Toast.makeText(getApplicationContext(), "You are not connected to the internet!", Toast.LENGTH_LONG).show();

@@ -32,6 +32,7 @@ public class DavSyncOpenHelper extends SQLiteOpenHelper {
 	 * network change events don’t upload the same Uris a lot of times.
 	 */
 	public ArrayList<String> getQueuedUris() {
+		System.out.println("getQueuedUris");
 		ArrayList<String> result = new ArrayList<String>();
 		SQLiteDatabase database = getWritableDatabase();
 		database.beginTransaction();
@@ -52,18 +53,23 @@ public class DavSyncOpenHelper extends SQLiteOpenHelper {
 		} finally {
 			database.endTransaction();
 		}
+//		database.close();
 		return result;
 	}
 
 	public void queueUri(Uri uri) {
+		System.out.println("queueUri");
 		SQLiteDatabase database = getWritableDatabase();
 		ContentValues values = new ContentValues();
 		values.put("uri", uri.toString());
-		database.insertOrThrow("sync_queue", null, values);
+//		database.insertOrThrow("sync_queue", null, values);
+		database.close();
 	}
 
 	public void removeUriFromQueue(String uri) {
+		System.out.println("removeUriFromQueue");
 		SQLiteDatabase database = getWritableDatabase();
 		database.delete("sync_queue", "uri = ?", new String[] { uri });
+//		database.close();
 	}
 }

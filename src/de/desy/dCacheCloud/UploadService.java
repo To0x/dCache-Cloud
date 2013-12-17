@@ -43,11 +43,13 @@ import org.apache.http.protocol.HttpContext;
 import de.desy.dCacheCloud.CountingInputStreamEntity.UploadListener;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.IntentService;
 import android.app.Notification.Builder;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -57,6 +59,7 @@ import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+import android.widget.Toast;
 
 /**
  * @author Tom Schubert
@@ -93,10 +96,12 @@ public class UploadService extends IntentService {
 		
 		// the return Value from the doors seems to be like "[Location: http:....?uid=...]"
 		String finalTarget = target.get(target.size()-1);
+		//Log.d("finalTarget: ", finalTarget);
+		
 		if (finalTarget != null && !finalTarget.startsWith("http")) {
 			finalTarget = finalTarget.substring(finalTarget.indexOf("http"), finalTarget.length()-1);
 			target.set(target.size()-1, finalTarget);
-		} else if (!finalTarget.endsWith(filename)) {
+		} else if (finalTarget != null && !finalTarget.endsWith(filename)) {
 			finalTarget += filename;
 			target.set(target.size()-1, finalTarget);
 		}
@@ -120,7 +125,7 @@ public class UploadService extends IntentService {
 		} catch (ClientProtocolException e) {
 			e.printStackTrace();
 			return false;
-		} catch (IOException e) {
+		} catch (IOException e) {		
 			e.printStackTrace();
 			return false;
 		}
@@ -146,6 +151,7 @@ public class UploadService extends IntentService {
 				NotificationNotify(fileUri.toString(),NotificationFailurePrepare(response.getStatusLine().toString()));
 			}
 		}
+	
 		return true;
 	}
 
@@ -165,14 +171,16 @@ public class UploadService extends IntentService {
 		String password = preferences.getString("webdav_password", null);
 		/* Get Settings End */
 		
+		/*
 		if (target.get(target.size()-1) == null) {
 			Log.d("dCache", "No URL set up.");
 			return false;
 		}
+		*/
 			
 		// Get Extras from Intend-Loader
 		fileUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
-		Log.d("davsyncs", "Uploading " + fileUri.toString());
+		Log.d("davsync", "Uploading " + fileUri.toString());
 		filename = getFilePath(fileUri);
 
 		if (filename == null) {
@@ -319,9 +327,27 @@ public class UploadService extends IntentService {
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		
-		int retryCount = 5;
-		while (!InitializeComponents(intent) && retryCount-- != 0);
+		SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
+		String user = preferences.getString("webdav_user", null);
+		String password = preferences.getString("webdav_password", null);
 		
-		uploadFile();
+		if (user != null || password != null || user != "" || password != "") { 
+		
+			int retryCount = 5;
+			while (!InitializeComponents(intent) && retryCount-- != 0);
+			
+			uploadFile();
+		} else {
+			
+			AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
+
+			dlgAlert.setMessage("This is an alert with no consequence");
+			dlgAlert.setTitle("App Title");
+			dlgAlert.setPositiveButton("OK", null);
+			dlgAlert.setCancelable(true);
+			dlgAlert.create().show();			
+			
+		}
+			
 	}
 }

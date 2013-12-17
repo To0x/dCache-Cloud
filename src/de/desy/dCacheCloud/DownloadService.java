@@ -30,10 +30,13 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class DownloadService extends IntentService {
 		
@@ -124,49 +127,63 @@ public class DownloadService extends IntentService {
 
 		httpGet.setURI(URI.create(finalTarget));
 		
-        HttpResponse response = null;
-		try {
-			response = httpClient.execute(httpGet);
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}    
-        
-		if (isRedirected) {
-			downloadFile();
-			return true;
+		
+		if (isNetworkConnected()) {
+	        HttpResponse response = null;
+			try {
+				response = httpClient.execute(httpGet);
+			} catch (ClientProtocolException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}    
+	        
+			if (isRedirected) {
+				downloadFile();
+				return true;
+			}
+			
+	        final Builder mBuilder = NotificationUploadPrepare(fileName);
+			
+	        InputStream in = response.getEntity().getContent();
+	        Long fileSize = response.getEntity().getContentLength();
+	        FileOutputStream fos = new FileOutputStream(new File(Environment.getExternalStorageDirectory() + "/dCacheCloud/" + fileName));
+	        
+	        byte[] buffer = new byte[4096];
+	        int length;
+	        long bytesWritten = 0;
+	        int lastPercent = 0;
+	        
+	        while((length = in.read(buffer)) > 0) {
+	            fos.write(buffer, 0, length);
+	            bytesWritten += length;
+	            
+				int percent = (int) ((bytesWritten * 100) / fileSize);
+				if (lastPercent != percent) {
+					mBuilder.setProgress(100, percent, false);
+					NotificationNotify(fileName, mBuilder);
+					lastPercent = percent;
+				}            
+	        }
+	        
+	        mBuilder.setOngoing(false);
+	        NotificationNotify(fileName, mBuilder);
+	        /* end Download */
+	        
+		} else {
+			Toast.makeText(getApplicationContext(), "You are not connected to the internet!", Toast.LENGTH_LONG).show();
 		}
-		
-        final Builder mBuilder = NotificationUploadPrepare(fileName);
-		
-        InputStream in = response.getEntity().getContent();
-        Long fileSize = response.getEntity().getContentLength();
-        FileOutputStream fos = new FileOutputStream(new File(Environment.getExternalStorageDirectory() + "/dCacheCloud/" + fileName));
-        
-        byte[] buffer = new byte[4096];
-        int length;
-        long bytesWritten = 0;
-        int lastPercent = 0;
-        
-        while((length = in.read(buffer)) > 0) {
-            fos.write(buffer, 0, length);
-            bytesWritten += length;
-            
-			int percent = (int) ((bytesWritten * 100) / fileSize);
-			if (lastPercent != percent) {
-				mBuilder.setProgress(100, percent, false);
-				NotificationNotify(fileName, mBuilder);
-				lastPercent = percent;
-			}            
-        }
-        
-        mBuilder.setOngoing(false);
-        NotificationNotify(fileName, mBuilder);
-        /* end Download */
-        
         return false;
 	}
+	
+	
+    public boolean isNetworkConnected() {
+        final ConnectivityManager conMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        final NetworkInfo activeNetwork = conMgr.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.getState() == NetworkInfo.State.CONNECTED;
+   }
+	
+	
 	
     private void InitializeComponents(){    	
         try {

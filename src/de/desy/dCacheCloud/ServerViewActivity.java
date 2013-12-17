@@ -5,6 +5,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -25,14 +27,33 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.view.View.OnKeyListener;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.Filterable;
+import android.widget.ImageButton;
 import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
+import android.widget.Toast;
  
 public class ServerViewActivity extends Activity {
 
@@ -41,6 +62,10 @@ public class ServerViewActivity extends Activity {
 	// Defines End //
 	
 	private ListView listView;
+	private EditText et;
+	private ImageButton imageButtonRefresh;
+	private ImageButton imageButtonSort;
+	private ImageButton imageButtonSearch;
 	private URL url1 = null;
 	private HttpGet httpGet = null;
 	private String user = null;
@@ -58,6 +83,8 @@ public class ServerViewActivity extends Activity {
     private static final Pattern HTML_A_HREF_TAG_PATTERN = Pattern.compile(
       "\\s*(?i)href\\s*=\\s*(\"([^\"]*\")|'[^']*'|([^'\">\\s]+))");
     
+    private int sortState = 2; // 1 = sorted alphabetically, 2 = sorted by file type
+    
     public List retrieveListing(URL url, String htmlText) throws IOException {
         List urlList = new ArrayList();
 
@@ -65,7 +92,6 @@ public class ServerViewActivity extends Activity {
         htmlText = htmlText.substring(whereToBegin);       
                 
         Matcher matcherTag = HTML_A_TAG_PATTERN.matcher(htmlText);
-                
                 
         while (matcherTag.find()) {
           String href = matcherTag.group(1);
@@ -132,10 +158,7 @@ public class ServerViewActivity extends Activity {
 	
 	private void test() {
 		final Context context = this;
-	
-        setContentView(R.layout.file_list);
-        listView = (ListView) findViewById(R.id.listView1);
-        	
+	        	
 		try {
 			httpClient = ServerHelper.getClient();
 		} catch (GeneralSecurityException e) {
@@ -193,39 +216,52 @@ public class ServerViewActivity extends Activity {
         {	
         	urlVector.add(serverDir.get(i).toString().substring(url1.toString().length())); 
         }
+        
         listView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, urlVector));
+        
+        if (sortState == 1) {
+        	sortAlphabetically();
+        }
+        else {
+        	sortFilesByType();
+        }
         
         listView.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener()
         {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            	
-            	String currentItem = parent.getItemAtPosition(position).toString();            	
-            	if (!currentItem.substring(currentItem.length() - 1).equals("/")) { // Wenn das angeklickte Item kein Ordner ist...
-	            	/*Intent intent = new Intent();
-	            	intent.setAction(android.content.Intent.ACTION_VIEW);
-	            	intent.setData(Uri.parse((url1.toString() + currentItem.replaceAll(" ", "%20"))));
-	            	startActivity(intent);*/ 	            	
-	        		Intent intent = new Intent(context, DownloadService.class);
-	        		intent.putExtra("url", url1 + currentItem.replaceAll(" ", "%20"));
-	        		intent.putExtra("filename", currentItem);
-	        		startService(intent);
-            	}
-            	else { // ... wenn das angeklickte Item ein Ordner ist
-            		/* neue ServerViewActivity */
-            		if (android.os.Build.VERSION.SDK_INT > 10) {
-            			StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            			StrictMode.setThreadPolicy(policy);
-            		}
-        		    Intent intent = new Intent(context, ServerViewActivity.class);
-					try {
-						intent.putExtra("url", new URL(url1.toString() + currentItem.replaceAll(" ", "%20")));
-					} catch (MalformedURLException e) {
-						e.printStackTrace();
-					}
-        		    startActivity(intent);
-        		    /* Ende neue ServerViewActivity */
-            	}
+				et.setVisibility(View.GONE);
+
+        		if (isNetworkConnected()) {
+	            	String currentItem = parent.getItemAtPosition(position).toString();            	
+	            	if (!currentItem.substring(currentItem.length() - 1).equals("/")) { // Wenn das angeklickte Item kein Ordner ist...
+		            	/*Intent intent = new Intent();
+		            	intent.setAction(android.content.Intent.ACTION_VIEW);
+		            	intent.setData(Uri.parse((url1.toString() + currentItem.replaceAll(" ", "%20"))));
+		            	startActivity(intent);*/ 	            	
+		        		Intent intent = new Intent(context, DownloadService.class);
+		        		intent.putExtra("url", url1 + currentItem.replaceAll(" ", "%20"));
+		        		intent.putExtra("filename", currentItem);
+		        		startService(intent);
+	            	}
+	            	else { // ... wenn das angeklickte Item ein Ordner ist
+	            		/* neue ServerViewActivity */
+	            		if (android.os.Build.VERSION.SDK_INT > 10) {
+	            			StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+	            			StrictMode.setThreadPolicy(policy);
+	            		}
+	        		    Intent intent = new Intent(context, ServerViewActivity.class);
+						try {
+							intent.putExtra("url", new URL(url1.toString() + currentItem.replaceAll(" ", "%20")));
+						} catch (MalformedURLException e) {
+							e.printStackTrace();
+						}
+	        		    startActivity(intent);
+	        		    /* Ende neue ServerViewActivity */
+	            	}
+        		} else {
+        			Toast.makeText(getApplicationContext(), "You are not connected to the internet!", Toast.LENGTH_LONG).show();
+        		}
             }
         });
         
@@ -250,9 +286,168 @@ public class ServerViewActivity extends Activity {
         });	*/	
 	}
 	
+    public boolean isNetworkConnected() {
+        final ConnectivityManager conMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        final NetworkInfo activeNetwork = conMgr.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.getState() == NetworkInfo.State.CONNECTED;
+   }
+    
+	public void addListenerOnImageButtonSort() {
+		et.setVisibility(View.GONE);
+
+        imageButtonSort = (ImageButton) findViewById(R.id.imageButtonSort);
+        imageButtonSort.setOnClickListener(new OnClickListener() {
+ 
+			@Override
+			public void onClick(View arg0) {
+				ServerViewActivity.this.openOptionsMenu(); 				
+			}
+		});
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) 
+	{
+	    super.onCreateOptionsMenu(menu);
+		SubMenu subAlphabetical = menu.addSubMenu(0, 0, 0, "Alphabetisch sortieren");
+		SubMenu subType = menu.addSubMenu(0, 1, 0, "Nach Typ sortieren");
+	    return true;
+	}
+	
+	public boolean onOptionsItemSelected(MenuItem item) {
+		super.onOptionsItemSelected(item);
+		switch(item.getItemId()) {
+			case 0: 
+				sortAlphabetically();
+				sortState = 1;
+			break;
+			case 1:
+				sortFilesByType();
+				sortState = 2;
+			break;
+		}
+		return true;
+	}	
+	
+	private void sortAlphabetically() {
+		Vector<String> urlVector = new Vector<String>();
+		for (int i = 0; i < listView.getAdapter().getCount(); i++) {
+        	urlVector.add((String) listView.getAdapter().getItem(i));
+		}		
+		Collections.sort(urlVector);
+        listView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, urlVector));		
+	}
+	
+	private void sortFilesByType() {
+		
+		sortAlphabetically(); // damit auch bei der Typsortierung eine alphabetische Ordnung herrscht
+		
+		Vector<String> urlVector = new Vector<String>();
+		for (int i = 0; i < listView.getAdapter().getCount(); i++) {
+        	urlVector.add((String) listView.getAdapter().getItem(i));
+		}		
+		
+		Collections.sort(urlVector, new Comparator<String>() {
+		    @Override
+		    public int compare(String s1, String s2) {
+		        final int s1Dot = s1.lastIndexOf('.');
+		        final int s2Dot = s2.lastIndexOf('.');
+		        if ((s1Dot == -1) == (s2Dot == -1)) { // both or neither
+		            s1 = s1.substring(s1Dot + 1);
+		            s2 = s2.substring(s2Dot + 1);
+		            return s1.compareTo(s2);
+		        } else if (s1Dot == -1) { // only s2 has an extension, so s1 goes first
+		            return -1;
+		        } else { // only s1 has an extension, so s1 goes second
+		            return 1;
+		        }
+		    }
+		});
+				
+        listView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, urlVector));		
+	}	
+			
+	public void addListenerOnImageButtonRefresh() {
+		et.setVisibility(View.GONE);
+
+        imageButtonRefresh = (ImageButton) findViewById(R.id.imageButtonRefresh);
+        imageButtonRefresh.setOnClickListener(new OnClickListener() {
+ 
+			@Override
+			public void onClick(View arg0) {
+ 			   test();
+			}
+		});
+	}
+	
+	public void addListenerOnImageButtonSearch() {
+		imageButtonSearch = (ImageButton) findViewById(R.id.imageButtonSearch);
+		imageButtonSearch.setOnClickListener(new OnClickListener() {
+ 
+			@Override
+			public void onClick(View arg0) {
+
+				et.setVisibility(View.VISIBLE);
+				et.requestFocus();
+				InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+				imm.showSoftInput(et, InputMethodManager.SHOW_IMPLICIT);
+				
+				et.addTextChangedListener(new TextWatcher() {
+	     
+				    @Override
+				    public void onTextChanged(CharSequence cs, int arg1, int arg2, int arg3) {
+				        // When user changed the Text
+				        ((Filterable) listView.getAdapter()).getFilter().filter(cs);  
+				    }
+				     
+				    @Override
+				    public void beforeTextChanged(CharSequence arg0, int arg1, int arg2, int arg3) {
+				        // TODO Auto-generated method stub
+				    }
+			
+					@Override
+					public void afterTextChanged(Editable arg0) {
+						// TODO Auto-generated method stub
+					}
+				});
+				
+				et.setOnEditorActionListener(new OnEditorActionListener() {        
+				    @Override
+				    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+				        if(actionId==EditorInfo.IME_ACTION_DONE){
+							et.clearFocus();
+							et.setVisibility(View.GONE);
+							InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+							imm.hideSoftInputFromWindow(et.getWindowToken(), 0);
+							return true;
+				        }
+				    return false;
+				    }
+				});
+				
+				et.setOnFocusChangeListener(new OnFocusChangeListener() {          
+					public void onFocusChange(View v, boolean hasFocus) {
+						if (!hasFocus) {
+							et.setVisibility(View.GONE);
+						}
+					}
+				});			
+			}
+		});	
+	}
+		
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);	 	
 		url1 = (URL) getIntent().getExtras().get("url");
+		
+        setContentView(R.layout.file_list);
+        listView = (ListView) findViewById(R.id.listView1);
+		et = (EditText)findViewById(R.id.inputSearch); 
+
+		addListenerOnImageButtonRefresh();
+		addListenerOnImageButtonSort();
+		addListenerOnImageButtonSearch();		
+		
 	 	test();
 	}
 }
