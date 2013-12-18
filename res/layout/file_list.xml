@@ -26,6 +26,7 @@
      android:layout_weight="1"
      android:text="ListView" />  
   
+  <!-- 
     <LinearLayout
         android:orientation="horizontal"
         android:background="@android:drawable/bottom_bar"
@@ -57,5 +58,6 @@
              android:layout_weight="1.0"
              android:src="@android:drawable/ic_menu_search" />
 
-    </LinearLayout>
+    </LinearLayout> -->
+    
 </LinearLayout>

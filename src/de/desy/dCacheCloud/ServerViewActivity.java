@@ -292,25 +292,32 @@ public class ServerViewActivity extends Activity {
         return activeNetwork != null && activeNetwork.getState() == NetworkInfo.State.CONNECTED;
    }
     
-	public void addListenerOnImageButtonSort() {
-		et.setVisibility(View.GONE);
-
-        imageButtonSort = (ImageButton) findViewById(R.id.imageButtonSort);
-        imageButtonSort.setOnClickListener(new OnClickListener() {
- 
-			@Override
-			public void onClick(View arg0) {
-				ServerViewActivity.this.openOptionsMenu(); 				
-			}
-		});
-	}
+//    
+//	public void addListenerOnImageButtonSort() {
+//		et.setVisibility(View.GONE);
+//
+//        imageButtonSort = (ImageButton) findViewById(R.id.imageButtonSort);
+//        imageButtonSort.setOnClickListener(new OnClickListener() {
+// 
+//			@Override
+//			public void onClick(View arg0) {
+//				ServerViewActivity.this.openOptionsMenu(); 				
+//			}
+//		});
+//	}
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) 
 	{
 	    super.onCreateOptionsMenu(menu);
-		SubMenu subAlphabetical = menu.addSubMenu(0, 0, 0, "Alphabetisch sortieren");
-		SubMenu subType = menu.addSubMenu(0, 1, 0, "Nach Typ sortieren");
+		//SubMenu subAlphabetical = menu.addSubMenu(0, 0, 0, "Alphabetisch sortieren");
+		//SubMenu subType = menu.addSubMenu(0, 1, 0, "Nach Typ sortieren");
+		SubMenu sort = menu.addSubMenu(0, 0, 0, "Sortieren");
+		sort.add(0, 3, 0, "Alphabetisch sortieren");
+		sort.add(0, 4, 0, "Nach Typ sortieren");
+		
+		SubMenu refresh = menu.addSubMenu(0, 1, 0, "Aktualisieren");
+		SubMenu search = menu.addSubMenu(0, 2, 0, "Suchen");
 	    return true;
 	}
 	
@@ -318,12 +325,22 @@ public class ServerViewActivity extends Activity {
 		super.onOptionsItemSelected(item);
 		switch(item.getItemId()) {
 			case 0: 
-				sortAlphabetically();
-				sortState = 1;
+//				sortAlphabetically();
+//				sortState = 1;
 			break;
 			case 1:
+//				sortFilesByType();
+//				sortState = 2;
+				refresh();
+			break;
+			case 2:
+				search();
+			break;
+			case 3:
+				sortAlphabetically();
+			break;
+			case 4:
 				sortFilesByType();
-				sortState = 2;
 			break;
 		}
 		return true;
@@ -367,25 +384,25 @@ public class ServerViewActivity extends Activity {
         listView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, urlVector));		
 	}	
 			
-	public void addListenerOnImageButtonRefresh() {
+	public void refresh() {
 		et.setVisibility(View.GONE);
 
-        imageButtonRefresh = (ImageButton) findViewById(R.id.imageButtonRefresh);
-        imageButtonRefresh.setOnClickListener(new OnClickListener() {
- 
-			@Override
-			public void onClick(View arg0) {
+//        imageButtonRefresh = (ImageButton) findViewById(R.id.imageButtonRefresh);
+//        imageButtonRefresh.setOnClickListener(new OnClickListener() {
+// 
+//			@Override
+//			public void onClick(View arg0) {
  			   test();
-			}
-		});
+//			}
+//		});
 	}
 	
-	public void addListenerOnImageButtonSearch() {
-		imageButtonSearch = (ImageButton) findViewById(R.id.imageButtonSearch);
-		imageButtonSearch.setOnClickListener(new OnClickListener() {
- 
-			@Override
-			public void onClick(View arg0) {
+	public void search() {
+//		imageButtonSearch = (ImageButton) findViewById(R.id.imageButtonSearch);
+//		imageButtonSearch.setOnClickListener(new OnClickListener() {
+// 
+//			@Override
+//			public void onClick(View arg0) {
 
 				et.setVisibility(View.VISIBLE);
 				et.requestFocus();
@@ -432,8 +449,8 @@ public class ServerViewActivity extends Activity {
 						}
 					}
 				});			
-			}
-		});	
+//			}
+//		});	
 	}
 		
 	public void onCreate(Bundle savedInstanceState) {
@@ -444,9 +461,9 @@ public class ServerViewActivity extends Activity {
         listView = (ListView) findViewById(R.id.listView1);
 		et = (EditText)findViewById(R.id.inputSearch); 
 
-		addListenerOnImageButtonRefresh();
-		addListenerOnImageButtonSort();
-		addListenerOnImageButtonSearch();		
+//		addListenerOnImageButtonRefresh();
+//		addListenerOnImageButtonSort();
+//		addListenerOnImageButtonSearch();		
 		
 	 	test();
 	}
