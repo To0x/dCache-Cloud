@@ -1,4 +1,4 @@
-package de.desy.dCacheCloud;
+package de.desy.dCacheCloud.Activities;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -12,7 +12,11 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.desy.dCacheCloud.DownloadService;
 import de.desy.dCacheCloud.R;
+import de.desy.dCacheCloud.ServerHelper;
+import de.desy.dCacheCloud.R.id;
+import de.desy.dCacheCloud.R.layout;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;

@@ -1,10 +1,11 @@
-package de.desy.dCacheCloud;
+package de.desy.dCacheCloud.Activities;
 
 import java.util.List;
 
 import de.desy.dCacheCloud.DownloadService;
 
 import de.desy.dCacheCloud.R;
+import de.desy.dCacheCloud.R.xml;
 
 import android.annotation.TargetApi;
 import android.content.Context;

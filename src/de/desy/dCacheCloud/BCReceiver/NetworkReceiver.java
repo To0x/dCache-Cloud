@@ -1,6 +1,9 @@
-package de.desy.dCacheCloud;
+package de.desy.dCacheCloud.BCReceiver;
 
 import java.util.ArrayList;
+
+import de.desy.dCacheCloud.OpenHelper;
+import de.desy.dCacheCloud.UploadService;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -44,7 +47,7 @@ public class NetworkReceiver extends BroadcastReceiver {
 		// BroadcastReceiver, but I was unable to find whether this is the right
 		// way or whether there is a better one.
 
-		DavSyncOpenHelper helper = new DavSyncOpenHelper(context);
+		OpenHelper helper = new OpenHelper(context);
 		ArrayList<String> uris = helper.getQueuedUris();
 		for (String uri : uris) {
 			Intent ulIntent = new Intent(context, UploadService.class);

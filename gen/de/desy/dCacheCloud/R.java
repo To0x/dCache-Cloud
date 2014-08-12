@@ -24,37 +24,53 @@ public final class R {
         public static final int dcachebird=0x7f020000;
         public static final int dcachebird2=0x7f020001;
         public static final int green_progress=0x7f020002;
-        public static final int ic_launcher=0x7f020003;
+        public static final int ic_action_add_person=0x7f020003;
+        public static final int ic_action_upload=0x7f020004;
+        public static final int ic_launcher=0x7f020005;
     }
     public static final class id {
-        public static final int action_settings=0x7f090004;
-        public static final int inputSearch=0x7f090001;
-        public static final int listView1=0x7f090000;
-        public static final int progressBar=0x7f090003;
-        public static final int text=0x7f090002;
+        public static final int action_addUser=0x7f09000a;
+        public static final int action_settings=0x7f09000b;
+        public static final int action_upload=0x7f090009;
+        public static final int buttonFriendOK=0x7f090002;
+        public static final int editTextFriendName=0x7f090000;
+        public static final int imageViewQR=0x7f090007;
+        public static final int inputSearch=0x7f090004;
+        public static final int listView1=0x7f090003;
+        public static final int progressBar=0x7f090006;
+        public static final int text=0x7f090005;
+        public static final int textViewFingerPrint=0x7f090008;
+        public static final int textViewFriendFingerprint=0x7f090001;
     }
     public static final class layout {
-        public static final int activity_main=0x7f030000;
-        public static final int activity_share=0x7f030001;
-        public static final int file_list=0x7f030002;
-        public static final int myprogressdialog=0x7f030003;
+        public static final int activity_friend_found=0x7f030000;
+        public static final int activity_main=0x7f030001;
+        public static final int activity_share=0x7f030002;
+        public static final int file_list=0x7f030003;
+        public static final int myprogressdialog=0x7f030004;
+        public static final int profile=0x7f030005;
     }
     public static final class menu {
-        public static final int share=0x7f080000;
+        public static final int main_activity_actions=0x7f080000;
+        public static final int share=0x7f080001;
     }
     public static final class string {
+        public static final int action_addUser=0x7f060007;
         public static final int action_settings=0x7f060001;
+        public static final int action_upload=0x7f060006;
         public static final int app_name=0x7f060000;
         public static final int dcache_url=0x7f060004;
         public static final int hello_world=0x7f060002;
         /**  Strings related to Settings 
  Example General settings 
          */
-        public static final int pref_header_autosync=0x7f060006;
-        public static final int pref_title_auto_sync_camera_pictures=0x7f060007;
-        public static final int pref_title_auto_sync_camera_videos=0x7f060008;
-        public static final int pref_title_auto_sync_on_wifi_only=0x7f060009;
-        public static final int title_activity_settings=0x7f060005;
+        public static final int pref_header_autosync=0x7f06000a;
+        public static final int pref_title_auto_sync_camera_pictures=0x7f06000b;
+        public static final int pref_title_auto_sync_camera_videos=0x7f06000c;
+        public static final int pref_title_auto_sync_on_wifi_only=0x7f06000d;
+        public static final int title_activity_friendFound=0x7f060008;
+        public static final int title_activity_profile=0x7f060005;
+        public static final int title_activity_settings=0x7f060009;
         public static final int title_activity_share=0x7f060003;
     }
     public static final class style {

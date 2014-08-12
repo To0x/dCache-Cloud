@@ -320,7 +320,7 @@ public class UploadService extends IntentService {
 	
 	private void NotificationCancel(String tag) {
 		mNotificationManager.cancel(tag, 0);
-		DavSyncOpenHelper helper = new DavSyncOpenHelper(this);
+		OpenHelper helper = new OpenHelper(this);
 		helper.removeUriFromQueue(fileUri.toString());
 	}
 	

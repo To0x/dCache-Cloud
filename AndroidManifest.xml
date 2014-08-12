@@ -5,8 +5,8 @@
     android:versionName="1.2" >
 
     <uses-sdk
-        android:minSdkVersion="3"
-        android:targetSdkVersion="17" />
+        android:minSdkVersion="11"
+        android:targetSdkVersion="19" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />    
@@ -22,13 +22,13 @@
         <service android:name="de.desy.dCacheCloud.DownloadService" />
 
         <activity
-            android:name="de.desy.dCacheCloud.ServerViewActivity"
+            android:name="de.desy.dCacheCloud.Activities.ServerViewActivity"
             android:label="@string/app_name" >
         </activity>
        
         
         <activity
-            android:name="de.desy.dCacheCloud.ShareActivity"
+            android:name="de.desy.dCacheCloud.Activities.ShareActivity"
             android:excludeFromRecents="true"
             android:label="@string/title_activity_share"
             android:theme="@android:style/Theme.NoDisplay" >
@@ -48,12 +48,12 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name="de.desy.dCacheCloud.NetworkReceiver" >
+        <receiver android:name="de.desy.dCacheCloud.BCReceiver.NetworkReceiver" >
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
-        <receiver android:name="de.desy.dCacheCloud.NewMediaReceiver" >
+        <receiver android:name="de.desy.dCacheCloud.BCReceiver.NewMediaReceiverdiaReceiver" >
             <intent-filter>
                 <action android:name="android.hardware.action.NEW_PICTURE" />
                 <action android:name="android.hardware.action.NEW_VIDEO" />
@@ -63,7 +63,7 @@
         </receiver>
 
         <activity
-            android:name="de.desy.dCacheCloud.SettingsActivity"
+            android:name="de.desy.dCacheCloud.Activities.SettingsActivity"
             android:label="@string/title_activity_settings" >
           <!-- <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -81,6 +81,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <activity 
+            android:name="de.desy.dCacheCloud.Activities.ProfileActivity"
+            android:label="@string/title_activity_profile">
+        </activity>
+
+        <activity android:name="de.desy.dCacheCloud.Activities.FriendFoundActivity"
+            android:label="@string/title_activity_friendFound"></activity>
+        
     </application>
 
 </manifest>

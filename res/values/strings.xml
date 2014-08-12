@@ -6,5 +6,9 @@
     <string name="hello_world">Hello world!</string>
     <string name="title_activity_share">dCache Cloud</string>
     <string name="dcache_url">https://cloud.dcache.org/</string>
+    <string name="title_activity_profile">Profil</string>
+    <string name="action_upload">Upload</string>
+    <string name="action_addUser">Benutzer Hinzufügen</string>
+    <string name="title_activity_friendFound">Freund gefunden</string>
 
 </resources>

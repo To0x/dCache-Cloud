@@ -1,8 +1,11 @@
-package de.desy.dCacheCloud;
+package de.desy.dCacheCloud.Activities;
 
 import java.util.ArrayList;
 
 import de.desy.dCacheCloud.R;
+import de.desy.dCacheCloud.UploadService;
+import de.desy.dCacheCloud.R.layout;
+import de.desy.dCacheCloud.R.menu;
 
 import android.app.Activity;
 import android.content.Intent;

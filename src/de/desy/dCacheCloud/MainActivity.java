@@ -2,36 +2,72 @@ package de.desy.dCacheCloud;
  
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Vector;
 
+import External.IntentIntegrator;
+import External.IntentResult;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.Toast;
-import de.desy.dCacheCloud.R;
+import de.desy.dCacheCloud.Activities.FriendFoundActivity;
+import de.desy.dCacheCloud.Activities.ProfileActivity;
+import de.desy.dCacheCloud.Activities.ServerViewActivity;
+import de.desy.dCacheCloud.Activities.SettingsActivity;
 
 public class MainActivity extends Activity {
  
 	private ListView listView1;
  	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId())
+		{
+		case R.id.action_settings:
+			break;
+		case R.id.action_addUser:
+			IntentIntegrator id = new IntentIntegrator(this);
+			id.initiateScan(IntentIntegrator.QR_CODE_TYPES);
+//	        Intent intent = new Intent("com.google.zxing.client.android.SCAN");
+//	        intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+//	        startActivityForResult(intent, 0);
+			break;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater infl = getMenuInflater();
+		infl.inflate(R.menu.main_activity_actions, menu);
+		return super.onCreateOptionsMenu(menu);
+	}
+	
+	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+		IntentResult res  = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
+		if (res != null)
+		{
+			Bundle b = new Bundle();
+			b.putString("KEY", "bla");
+			Intent friendFoundIntent = new Intent(this, FriendFoundActivity.class);
+			friendFoundIntent.putExtras(b);
+			startActivity(friendFoundIntent);
+		}
+	}
+
 	public void onCreate(Bundle savedInstanceState) {
 		final Context context = this;
  
@@ -42,6 +78,7 @@ public class MainActivity extends Activity {
         Vector<String> listView1Vector = new Vector<String>();
         listView1Vector.add("Server"); 
         listView1Vector.add("Einstellungen");
+        listView1Vector.add("Profil");
         listView1.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, listView1Vector));
  
 		listView1.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener()
@@ -81,11 +118,18 @@ public class MainActivity extends Activity {
             			Toast.makeText(getApplicationContext(), "You are not connected to the internet!", Toast.LENGTH_LONG).show();
             		}
             	}
-            	else
+            	else if (position == 1)
             	{
         		    Intent intent = new Intent(context, SettingsActivity.class);
         		    startActivity(intent);
             	}
+            	else
+            	{
+            		Intent intent = new Intent(context, ProfileActivity.class);
+            		startActivity(intent);
+            		// call profile!
+            	}
+            	
             }
         });		
 	} 
