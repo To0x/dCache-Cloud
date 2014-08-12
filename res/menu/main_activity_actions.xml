@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item android:id="@+id/action_upload"
+        android:title="@string/action_upload"
+        android:icon="@drawable/ic_action_upload"
+        android:showAsAction="always" />
+    
+    <item android:id="@+id/action_addUser"
+        android:title="@string/action_addUser"
+        android:icon="@drawable/ic_action_add_person"
+        android:showAsAction="always"/>
+
+</menu>

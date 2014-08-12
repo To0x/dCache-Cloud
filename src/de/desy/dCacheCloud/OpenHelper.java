@@ -1,7 +1,10 @@
 package de.desy.dCacheCloud;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -42,21 +45,31 @@ public class OpenHelper extends SQLiteOpenHelper {
 		PublicKey pub;
 		db.beginTransaction();
 		try {
+			// initialize key-pair (RSA)
 			kgen = KeyPairGenerator.getInstance("RSA");
 			kgen.initialize(2048);
 			KeyPair kpair = kgen.generateKeyPair();
 			priv = kpair.getPrivate();
 			pub = kpair.getPublic();
 			
+			// calculate hash!
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] data = digest.digest(pub.toString().getBytes("UTF-8"));
+			String hash = String.format("%0" + (data.length*2) + "X", new BigInteger(1, data));
+			
+			// write to DB!
 			ContentValues values = new ContentValues();
 			values.put("name", "myOwn");
 			values.put("public_key", pub.toString());
+			values.put("public_hash", hash);
 			values.put("private_key", priv.toString());
 			db.insertOrThrow("user_keys", null, values);
 			
 			db.setTransactionSuccessful();
 			
 		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
 		finally
@@ -122,7 +135,27 @@ public class OpenHelper extends SQLiteOpenHelper {
 		return null;
 	}
 
-	public boolean setPersonPublicKey(String name, String public_key)
+	public String getOwnHashKey()
+	{
+		SQLiteDatabase db = getReadableDatabase();
+		db.beginTransaction();
+		try
+		{
+			Cursor cur = db.rawQuery("SELECT public_hash FROM user_keys where id = ?", new String[] {"1"});
+			if (cur.moveToFirst())
+			{
+				db.setTransactionSuccessful();
+				return cur.getString(0);
+			}
+		}
+		finally
+		{
+			db.endTransaction();
+		}
+		return "";
+	}
+	
+	public boolean setPersonPublicKey(String name, String public_key, String public_hash)
 	{
 		SQLiteDatabase db = getWritableDatabase();
 		db.beginTransaction();
@@ -131,6 +164,7 @@ public class OpenHelper extends SQLiteOpenHelper {
 			ContentValues values = new ContentValues();
 			values.put("name", name);
 			values.put("public_key", public_key);
+			values.put("publi_hash", public_hash);
 			db.insertOrThrow("user_keys", null, values);
 			db.setTransactionSuccessful();
 		}
@@ -184,6 +218,56 @@ public class OpenHelper extends SQLiteOpenHelper {
 			db.endTransaction();
 //			db.close();
 		}
+	}
+	
+	public boolean isAlreadyAFriend(String public_key)
+	{
+		if (getFriendHashKey(public_key) != null)
+			return true;
+		
+		return false;
+	}
+	
+	public String getFriendHashKey(String public_key)
+	{
+		SQLiteDatabase db = getReadableDatabase();
+		db.beginTransaction();
+		try
+		{
+			Cursor cur = db.rawQuery("SELECT public_hash FROM user_keys WHERE name = ?", new String[] {public_key});
+			if (cur.moveToFirst())
+			{
+				db.setTransactionSuccessful();
+				return cur.getString(0);
+			}
+		}
+		finally
+		{
+			db.endTransaction();
+//			db.close();
+		}
+		return null;
+	}
+	
+	public String getFriendName(String public_key)
+	{
+		SQLiteDatabase db = getReadableDatabase();
+		db.beginTransaction();
+		try
+		{
+			Cursor cur = db.rawQuery("SELECT name FROM user_keys WHERE name = ?", new String[] {public_key});
+			if (cur.moveToFirst())
+			{
+				db.setTransactionSuccessful();
+				return cur.getString(0);
+			}
+		}
+		finally
+		{
+			db.endTransaction();
+//			db.close();
+		}
+		return null;
 	}
 	
 	public String getPersonPublicKey(String name)

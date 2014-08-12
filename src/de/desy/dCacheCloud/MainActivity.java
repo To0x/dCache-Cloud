@@ -1,7 +1,9 @@
 package de.desy.dCacheCloud;
  
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.MessageDigest;
 import java.util.Vector;
 
 import External.IntentIntegrator;
@@ -60,11 +62,31 @@ public class MainActivity extends Activity {
 		IntentResult res  = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
 		if (res != null)
 		{
-			Bundle b = new Bundle();
-			b.putString("KEY", "bla");
-			Intent friendFoundIntent = new Intent(this, FriendFoundActivity.class);
-			friendFoundIntent.putExtras(b);
-			startActivity(friendFoundIntent);
+			try
+			{
+				OpenHelper oh = new OpenHelper(this);
+				String name = oh.getFriendName(res.getContents());
+				
+				if (name != null)
+				{
+					Toast.makeText(this, String.format("Friend already exist with name : %s",name), Toast.LENGTH_LONG).show();
+				}
+				else
+				{
+					Bundle b = new Bundle();
+					b.putString("KEY", res.getContents());
+					Intent friendFoundIntent = new Intent(this, FriendFoundActivity.class);
+					MessageDigest digest = MessageDigest.getInstance("SHA-256");
+					byte[] data = digest.digest(res.getContents().getBytes("UTF-8"));
+					String hash = String.format("%0" + (data.length*2) + "X", new BigInteger(1, data));
+					b.putString("HASH",hash);
+					friendFoundIntent.putExtras(b);
+					startActivity(friendFoundIntent);
+				}
+			}
+			catch (Exception e)
+			{}
+
 		}
 	}
 
