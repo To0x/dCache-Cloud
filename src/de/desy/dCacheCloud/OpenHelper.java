@@ -164,7 +164,7 @@ public class OpenHelper extends SQLiteOpenHelper {
 			ContentValues values = new ContentValues();
 			values.put("name", name);
 			values.put("public_key", public_key);
-			values.put("publi_hash", public_hash);
+			values.put("public_hash", public_hash);
 			db.insertOrThrow("user_keys", null, values);
 			db.setTransactionSuccessful();
 		}
@@ -255,7 +255,7 @@ public class OpenHelper extends SQLiteOpenHelper {
 		db.beginTransaction();
 		try
 		{
-			Cursor cur = db.rawQuery("SELECT name FROM user_keys WHERE name = ?", new String[] {public_key});
+			Cursor cur = db.rawQuery("SELECT name FROM user_keys WHERE public_key = ?", new String[] {public_key});
 			if (cur.moveToFirst())
 			{
 				db.setTransactionSuccessful();
