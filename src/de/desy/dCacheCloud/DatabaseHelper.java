@@ -1,28 +1,20 @@
 package de.desy.dCacheCloud;
 
-import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.util.ArrayList;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 
-public class OpenHelper extends SQLiteOpenHelper {
+public class DatabaseHelper extends SQLiteOpenHelper {
 	private static final String DATABASE_NAME = "dCacheCloud";
 	private static final int DATABASE_VERSION = 1;
 
-	public OpenHelper(Context context) {
+	public DatabaseHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
 
@@ -40,37 +32,20 @@ public class OpenHelper extends SQLiteOpenHelper {
 
 	private void createPublicKey(SQLiteDatabase db)
 	{
-		KeyPairGenerator kgen;
-		PrivateKey priv;
-		PublicKey pub;
+		KeyPair pair;
 		db.beginTransaction();
 		try {
-			// initialize key-pair (RSA)
-			kgen = KeyPairGenerator.getInstance("RSA");
-			kgen.initialize(2048);
-			KeyPair kpair = kgen.generateKeyPair();
-			priv = kpair.getPrivate();
-			pub = kpair.getPublic();
-			
-			// calculate hash!
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			byte[] data = digest.digest(pub.toString().getBytes("UTF-8"));
-			String hash = String.format("%0" + (data.length*2) + "X", new BigInteger(1, data));
-			
+			pair = CryptoHelper.generateAsymmetricKeyPair(2048);
+	
 			// write to DB!
 			ContentValues values = new ContentValues();
 			values.put("name", "myOwn");
-			values.put("public_key", pub.toString());
-			values.put("public_hash", hash);
-			values.put("private_key", priv.toString());
+			values.put("public_key", pair.getPublic().toString());
+			values.put("public_hash", CryptoHelper.hash(pair.getPublic().toString()));
+			values.put("private_key", pair.getPrivate().toString());
 			db.insertOrThrow("user_keys", null, values);
 			
 			db.setTransactionSuccessful();
-			
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
 		}
 		finally
 		{
@@ -197,18 +172,18 @@ public class OpenHelper extends SQLiteOpenHelper {
 		return null;
 	}
 	
-	public boolean writeFileAESKey(String base64FileHash, String name, byte[] aesKey)
+	public boolean writeFileAESKey(String base64FileHash, String name, String aesKey, String iv)
 	{
+		/// TODO Prüfen, wie man Daten richtig in eine Datenbank speicher - mit Salt und so?!?
 		SQLiteDatabase db = getWritableDatabase();
 		db.beginTransaction();
 		try
 		{
-			System.out.println("queueUri");
 			SQLiteDatabase database = getWritableDatabase();
 			ContentValues values = new ContentValues();
 			values.put("name", name);
 			values.put("hashBase64", base64FileHash);
-			values.put("aes", aesKey);
+			values.put("aes", String.format("%s;%s", aesKey, iv));
 			database.insertOrThrow("file_keys", null, values);
 			db.setTransactionSuccessful();
 			return true;
@@ -216,7 +191,6 @@ public class OpenHelper extends SQLiteOpenHelper {
 		finally
 		{
 			db.endTransaction();
-//			db.close();
 		}
 	}
 	

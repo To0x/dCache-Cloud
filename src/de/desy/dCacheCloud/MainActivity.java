@@ -1,9 +1,11 @@
 package de.desy.dCacheCloud;
  
-import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.MessageDigest;
+import java.security.KeyStore;
+import java.security.KeyStore.PasswordProtection;
+import java.security.KeyStore.ProtectionParameter;
+import java.security.KeyStoreException;
 import java.util.Vector;
 
 import External.IntentIntegrator;
@@ -16,12 +18,12 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -33,19 +35,17 @@ import de.desy.dCacheCloud.Activities.SettingsActivity;
 public class MainActivity extends Activity {
  
 	private ListView listView1;
- 	
+	private Context context;
+	private KeyStore keyStore;
+	private Vector<String> selectableMenus;
+ 		
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId())
 		{
-		case R.id.action_settings:
-			break;
 		case R.id.action_addUser:
 			IntentIntegrator id = new IntentIntegrator(this);
 			id.initiateScan(IntentIntegrator.QR_CODE_TYPES);
-//	        Intent intent = new Intent("com.google.zxing.client.android.SCAN");
-//	        intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
-//	        startActivityForResult(intent, 0);
 			break;
 		}
 		return super.onOptionsItemSelected(item);
@@ -57,6 +57,7 @@ public class MainActivity extends Activity {
 		infl.inflate(R.menu.main_activity_actions, menu);
 		return super.onCreateOptionsMenu(menu);
 	}
+
 	
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		IntentResult res  = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
@@ -64,7 +65,7 @@ public class MainActivity extends Activity {
 		{
 			try
 			{
-				OpenHelper oh = new OpenHelper(this);
+				DatabaseHelper oh = new DatabaseHelper(this);
 				String name = oh.getFriendName(res.getContents());
 				
 				if (name != null)
@@ -75,11 +76,8 @@ public class MainActivity extends Activity {
 				{
 					Bundle b = new Bundle();
 					b.putString("KEY", res.getContents());
+					b.putString("HASH",CryptoHelper.hash(res.getContents()));
 					Intent friendFoundIntent = new Intent(this, FriendFoundActivity.class);
-					MessageDigest digest = MessageDigest.getInstance("SHA-256");
-					byte[] data = digest.digest(res.getContents().getBytes("UTF-8"));
-					String hash = String.format("%0" + (data.length*2) + "X", new BigInteger(1, data));
-					b.putString("HASH",hash);
 					friendFoundIntent.putExtras(b);
 					startActivity(friendFoundIntent);
 				}
@@ -90,27 +88,32 @@ public class MainActivity extends Activity {
 		}
 	}
 
-	public void onCreate(Bundle savedInstanceState) {
-		final Context context = this;
- 
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
- 
-        listView1 = (ListView) findViewById(R.id.listView1);
+	private void initialize()
+	{
+		context = this.getApplicationContext();
+		keyStore = KeyStoreHelper.getKeyStore(context);
+		listView1 = (ListView) findViewById(R.id.listView1);
+		
         Vector<String> listView1Vector = new Vector<String>();
         listView1Vector.add("Server"); 
         listView1Vector.add("Einstellungen");
         listView1Vector.add("Profil");
         listView1.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, listView1Vector));
+	}
+
+	public void onCreate(Bundle savedInstanceState) {
+ 
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+ 
+        initialize();
  
 		listView1.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener()
         {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            	Log.i("Hello!", "listView1 Clicked! YAY!");
             	if (position == 0)
             	{
-            		
             		SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
             		String user = preferences.getString("webdav_user", null);
             		String password = preferences.getString("webdav_password", null);

@@ -6,13 +6,13 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import de.desy.dCacheCloud.OpenHelper;
+import de.desy.dCacheCloud.DatabaseHelper;
 import de.desy.dCacheCloud.R;
 
 public class FriendFoundActivity extends Activity {
 
 	private EditText friendName;
-	private OpenHelper oh;
+	private DatabaseHelper oh;
 	private String public_key;
 	private TextView tvFriendHash;
 	
@@ -26,7 +26,7 @@ public class FriendFoundActivity extends Activity {
 		Bundle b = getIntent().getExtras();
 		public_key = b.getString("KEY");
 		tvFriendHash.setText(b.getString("HASH"));
-		oh = new OpenHelper(this);
+		oh = new DatabaseHelper(this);
 		
 	}
 	

@@ -1,6 +1,6 @@
 package de.desy.dCacheCloud.BCReceiver;
 
-import de.desy.dCacheCloud.OpenHelper;
+import de.desy.dCacheCloud.DatabaseHelper;
 import de.desy.dCacheCloud.UploadService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -57,7 +57,7 @@ public class NewMediaReceiver extends BroadcastReceiver {
 		} else {
 			Log.d("davsync", "Queueing " + uri + "for later (not on WIFI)");
 			// otherwise, queue the image for later
-			OpenHelper helper = new OpenHelper(context);
+			DatabaseHelper helper = new DatabaseHelper(context);
 			helper.queueUri(uri);
 		}
 	}

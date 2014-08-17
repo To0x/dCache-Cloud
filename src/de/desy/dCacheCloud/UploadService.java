@@ -1,5 +1,6 @@
 package de.desy.dCacheCloud;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,39 +9,20 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.HttpVersion;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.AuthenticationException;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultRedirectHandler;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpParams;
-import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
-
-import de.desy.dCacheCloud.CountingInputStreamEntity.UploadListener;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
@@ -49,17 +31,16 @@ import android.app.Notification.Builder;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
+import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
-import android.widget.Toast;
+import de.desy.dCacheCloud.CountingInputStreamEntity.UploadListener;
 
 /**
  * @author Tom Schubert
@@ -85,6 +66,7 @@ public class UploadService extends IntentService {
 	private List<String> target = new ArrayList<String>();
 	private String filename = null;
 	private Uri fileUri = null;
+	private CryptoHelper ch = null;
 
 	public UploadService() {
 		super("UploadService");
@@ -179,10 +161,18 @@ public class UploadService extends IntentService {
 		*/
 			
 		// Get Extras from Intend-Loader
-		fileUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
-		Log.d("davsync", "Uploading " + fileUri.toString());
-		filename = getFilePath(fileUri);
 
+		fileUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+
+		File sdCard = Environment.getExternalStorageDirectory();
+		fileUri = Uri.parse(String.format("file://%s/%s/%s", sdCard.getAbsolutePath(), "dCacheCloud", CryptoHelper.hash(fileUri.getLastPathSegment())));
+//		File fileOutput = new File(sdCard, String.format("dCacheCloud/%s", CryptoHelper.hash(fileUri.getLastPathSegment())));
+		
+		Log.d("davsync", "Uploading " + fileUri.toString());
+		filename = fileUri.getLastPathSegment();
+
+
+		
 		if (filename == null) {
 			Log.d("dCache", "fileName returned null");
 			return false;
@@ -218,38 +208,6 @@ public class UploadService extends IntentService {
 		ServerHelper.setCredentials(httpClient, httpPut, user, password);
 		
 		return true;
-	}
-
-	private String getFilePath(Uri uriToFile) {
-		
-		String filename = null;
-		String scheme = uriToFile.getScheme();
-		if (scheme.equals("file")) {
-		    filename = uriToFile.getLastPathSegment();
-		}
-		else if (scheme.equals("content")) {
-
-		    String[] proj = { MediaStore.Images.Media.TITLE };
-		    Cursor cursor = getContentResolver().query(uriToFile, proj, null, null, null);
-		    if (cursor != null && cursor.getCount() != 0) {
-		    	int columnIndex = -1;
-		    	try {
-		    		columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.TITLE);
-		    	} catch (IllegalArgumentException e) {
-		    		Log.d("dCache", e.toString());
-		    	}
-		        cursor.moveToFirst();
-		        filename = cursor.getString(columnIndex);
-		    }
-		    
-		    MimeTypeMap mime = MimeTypeMap.getSingleton();
-		    String type = mime.getExtensionFromMimeType(cr.getType(uriToFile));
-		    
-		    filename += "." + type;
-		}
-
-		
-		return filename;
 	}
 	
 	private Builder NotificationFailurePrepare(String text) {
@@ -320,7 +278,7 @@ public class UploadService extends IntentService {
 	
 	private void NotificationCancel(String tag) {
 		mNotificationManager.cancel(tag, 0);
-		OpenHelper helper = new OpenHelper(this);
+		DatabaseHelper helper = new DatabaseHelper(this);
 		helper.removeUriFromQueue(fileUri.toString());
 	}
 	
@@ -330,6 +288,7 @@ public class UploadService extends IntentService {
 		SharedPreferences preferences = getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
 		String user = preferences.getString("webdav_user", null);
 		String password = preferences.getString("webdav_password", null);
+		ch = new CryptoHelper();
 		
 		if (user != null || password != null || user != "" || password != "") { 
 		
@@ -337,7 +296,13 @@ public class UploadService extends IntentService {
 			while (!InitializeComponents(intent) && retryCount-- != 0);
 			
 			uploadFile();
-		} else {
+		} else
+			alert();
+			
+	}
+
+	private void alert() {
+		{
 			
 			AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
 
@@ -348,6 +313,5 @@ public class UploadService extends IntentService {
 			dlgAlert.create().show();			
 			
 		}
-			
 	}
 }

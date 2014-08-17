@@ -12,12 +12,6 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import de.desy.dCacheCloud.DownloadService;
-import de.desy.dCacheCloud.R;
-import de.desy.dCacheCloud.ServerHelper;
-import de.desy.dCacheCloud.R.id;
-import de.desy.dCacheCloud.R.layout;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -25,7 +19,6 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.apache.ivy.util.Message;
 
 import android.app.Activity;
 import android.content.Context;
@@ -33,7 +26,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.text.Editable;
@@ -44,9 +36,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
-import android.view.View.OnKeyListener;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -58,6 +48,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
+import de.desy.dCacheCloud.DownloadService;
+import de.desy.dCacheCloud.R;
+import de.desy.dCacheCloud.ServerHelper;
  
 public class ServerViewActivity extends Activity {
 

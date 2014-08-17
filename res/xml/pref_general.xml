@@ -3,6 +3,4 @@
     <EditTextPreference android:title="dCache URL" android:key="webdav_url" android:inputType="textUri" android:enabled="false" android:selectable="false" android:defaultValue="@string/dcache_url"/>
     <EditTextPreference android:title="dCache Username" android:key="webdav_user" android:inputType="textNoSuggestions"/>
     <EditTextPreference android:title="dCache password" android:key="webdav_password" android:inputType="textWebPassword"/>
-    
-
 </PreferenceScreen>

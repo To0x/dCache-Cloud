@@ -15,7 +15,7 @@ import android.widget.TextView;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 
-import de.desy.dCacheCloud.OpenHelper;
+import de.desy.dCacheCloud.DatabaseHelper;
 import de.desy.dCacheCloud.R;
 import de.desy.dCacheCloud.QRCode.Contents;
 import de.desy.dCacheCloud.QRCode.QRCodeEncoder;
@@ -48,7 +48,7 @@ public class ProfileActivity extends Activity {
 	   int smallerDimension = width < height ? width : height;
 //	   smallerDimension = smallerDimension * 3/4;
 	 
-	   OpenHelper oh = new OpenHelper(this);
+	   DatabaseHelper oh = new DatabaseHelper(this);
 	   String content = oh.getOwnPublicKey();
 	   String hashContent = oh.getOwnHashKey();
 

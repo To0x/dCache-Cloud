@@ -2,27 +2,24 @@ package de.desy.dCacheCloud.Activities;
 
 import java.util.ArrayList;
 
-import de.desy.dCacheCloud.R;
-import de.desy.dCacheCloud.UploadService;
-import de.desy.dCacheCloud.R.layout;
-import de.desy.dCacheCloud.R.menu;
+import javax.crypto.SecretKey;
 
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.provider.MediaStore;
 import android.util.Log;
-import android.view.Menu;
+import de.desy.dCacheCloud.CryptoHelper;
+import de.desy.dCacheCloud.KeyStoreHelper;
+import de.desy.dCacheCloud.R;
+import de.desy.dCacheCloud.UploadService;
 
 public class ShareActivity extends Activity {
 
-	/*
-	 * Takes one or multiple images (see AndroidManifest.xml) and calls
-	 * shareImageWithUri() on each one.
-	 *
-	 * @see android.app.Activity#onCreate(android.os.Bundle)
-	 */
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -40,29 +37,72 @@ public class ShareActivity extends Activity {
 			return;
 
 		if (Intent.ACTION_SEND.equals(action)) {
-			Uri imageUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
-			shareImageWithUri(imageUri);
+			Uri fileUri = getFilePath((Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM));
+			encryptFile(fileUri);
+			uploadFile(fileUri);
+			deleteLocalFile(fileUri);
 		} else if (Intent.ACTION_SEND_MULTIPLE.equals(action)) {
 			ArrayList<Parcelable> list = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
 			for (Parcelable p : list) {
-				shareImageWithUri((Uri) p);
+				Uri fileUri = getFilePath((Uri) p);
+				encryptFile(fileUri);
+				uploadFile(fileUri);
+				deleteLocalFile(fileUri);
 			}
 		}
 	}
 
-	private void shareImageWithUri(Uri uri) {
+	private void encryptFile(Uri file)
+	{
+		SecretKey key = CryptoHelper.generateBlockCipherKey(256);
+		String fileHash = CryptoHelper.hash(file.getLastPathSegment());
+		
+		if (CryptoHelper.encryptBlockCipherWithIV(file, key))
+		{
+				KeyStoreHelper.storeKey(KeyStoreHelper.getKeyStore(this), fileHash, key);
+		}
+	}
+	
+	private void uploadFile(Uri uri) {
 		Log.d("davsync", "Sharing " + uri.toString());
 
 		Intent ulIntent = new Intent(this, UploadService.class);
 		ulIntent.putExtra(Intent.EXTRA_STREAM, uri);
 		startService(ulIntent);
 	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.share, menu);
-		return true;
+	
+	private void deleteLocalFile(Uri uri)
+	{
+		//TODO:
+		// check if upload is completed!
 	}
+	
+	private Uri getFilePath(Uri uriToFile) {
+		
+		ContentResolver cr = getContentResolver();
+		String filename = null;
+		String scheme = uriToFile.getScheme();
+		Uri uri = uriToFile;
+		
+		if (scheme.equals("content")) {
 
+		    String[] proj = { MediaStore.Images.Media.DATA };
+		    Cursor cursor = cr.query(uriToFile, proj, null, null, null);
+		    if (cursor != null && cursor.getCount() != 0) {
+		    	int columnIndex = -1;
+		    	try {
+		    		columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+		    	} catch (IllegalArgumentException e) {
+		    		Log.d("dCache", e.toString());
+		    	}
+		    	
+		        cursor.moveToFirst();
+		        filename = cursor.getString(columnIndex);
+		    }
+		    
+		    uri = Uri.parse("file://"  + filename);
+		}
+		
+		return uri;
+	}
 }
