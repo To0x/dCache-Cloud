@@ -1,7 +1,9 @@
 package de.desy.dCacheCloud;
 
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.List;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -23,12 +25,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		// quee
 		db.execSQL("CREATE TABLE IF NOT EXISTS sync_queue (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, uri STRING NOT NULL, not_before DATETIME, uploading BOOLEAN DEFAULT 0);");
 		// user-keys: id, name, public-key
-		db.execSQL("CREATE TABLE IF NOT EXISTS user_keys(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name STRING NOT NULL, public_key STRING NOT NULL, public_hash STRING NOT NULL, private_key STRING DEFAULT NULL);");
-		// file-keys: id, name, file-hash, aes + salt
-		db.execSQL("CREATE TABLE IF NOT EXISTS file_keys(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name STRING NOT NULL, hashBase64 STRING NOT NULL, aes STRING NOT NULL);");
+		db.execSQL("CREATE TABLE IF NOT EXISTS user_keys(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name STRING NOT NULL, public_key STRING NOT NULL, public_hash STRING NOT NULL);");
+		// file-keys: id, name, file-hash
+//		db.execSQL("CREATE TABLE IF NOT EXISTS file_keys(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name STRING NOT NULL, hash STRING NOT NULL;");
 		
 		createPublicKey(db);
 	}
+
 
 	private void createPublicKey(SQLiteDatabase db)
 	{
@@ -42,7 +45,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			values.put("name", "myOwn");
 			values.put("public_key", pair.getPublic().toString());
 			values.put("public_hash", CryptoHelper.hash(pair.getPublic().toString()));
-			values.put("private_key", pair.getPrivate().toString());
+			// TODO: Store private Key in KeyStore?!?
+//			values.put("private_key", pair.getPrivate().toString());
 			db.insertOrThrow("user_keys", null, values);
 			
 			db.setTransactionSuccessful();
@@ -150,6 +154,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		return false;
 	}
 	
+	/*
 	public String getFileAESKey(String name)
 	{
 		//TODO: Check Hash!
@@ -193,7 +198,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			db.endTransaction();
 		}
 	}
-	
+	*/
 	public boolean isAlreadyAFriend(String public_key)
 	{
 		if (getFriendHashKey(public_key) != null)
@@ -242,6 +247,32 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 //			db.close();
 		}
 		return null;
+	}
+	
+	public List<String> getAllFriends()
+	{
+		List<String> friends = new ArrayList<String>();
+		SQLiteDatabase db = getReadableDatabase();
+		db.beginTransaction();
+		try
+		{
+			Cursor cur = db.rawQuery("SELECT name FROM user_keys ORDER BY id", null);
+			if (cur.moveToFirst())
+			{
+				// frist one is own public Key!
+				//friends.add(cur.getString(0));
+				while (cur.moveToNext())
+				{
+					friends.add(cur.getString(0));
+				}
+			}
+			db.setTransactionSuccessful();
+		}
+		finally
+		{
+			db.endTransaction();
+		}
+		return friends;
 	}
 	
 	public String getPersonPublicKey(String name)

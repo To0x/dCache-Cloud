@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.security.KeyManagementException;
-import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
@@ -24,9 +23,6 @@ import org.apache.http.protocol.HttpContext;
 
 import android.app.Dialog;
 import android.app.IntentService;
-import android.support.v4.app.NotificationCompat;
-//import android.app.Notification.Builder;
-import android.support.v4.app.NotificationCompat.Builder;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
@@ -35,10 +31,13 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Environment;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat.Builder;
 import android.util.Log;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+//import android.app.Notification.Builder;
 
 public class DownloadService extends IntentService {
 		
@@ -172,7 +171,7 @@ public class DownloadService extends IntentService {
 	        NotificationNotify(fileName, mBuilder);
 	        /* end Download */
 	        
-	        CryptoHelper.decryptBlockCipherWithIV(Uri.parse(fileName), KeyStoreHelper.getKey(KeyStoreHelper.getKeyStore(this), CryptoHelper.hash(fileName)));
+	        CryptoHelper.decryptBlockCipherWithIV(Uri.parse(fileName), KeyStoreHelper.getKey(fileName));
 	        
 		} else {
 			Toast.makeText(getApplicationContext(), "You are not connected to the internet!", Toast.LENGTH_LONG).show();

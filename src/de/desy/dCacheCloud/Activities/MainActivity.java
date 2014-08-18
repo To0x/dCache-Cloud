@@ -1,11 +1,7 @@
-package de.desy.dCacheCloud;
+package de.desy.dCacheCloud.Activities;
  
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.KeyStore;
-import java.security.KeyStore.PasswordProtection;
-import java.security.KeyStore.ProtectionParameter;
-import java.security.KeyStoreException;
 import java.util.Vector;
 
 import External.IntentIntegrator;
@@ -23,21 +19,18 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
-import de.desy.dCacheCloud.Activities.FriendFoundActivity;
-import de.desy.dCacheCloud.Activities.ProfileActivity;
-import de.desy.dCacheCloud.Activities.ServerViewActivity;
-import de.desy.dCacheCloud.Activities.SettingsActivity;
+import de.desy.dCacheCloud.CryptoHelper;
+import de.desy.dCacheCloud.DatabaseHelper;
+import de.desy.dCacheCloud.KeyStoreHelper;
+import de.desy.dCacheCloud.R;
 
 public class MainActivity extends Activity {
  
-	private ListView listView1;
+	private ListView lvMainMenu;
 	private Context context;
-	private KeyStore keyStore;
-	private Vector<String> selectableMenus;
  		
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -59,6 +52,12 @@ public class MainActivity extends Activity {
 	}
 
 	
+	@Override
+	protected void onDestroy() {
+		KeyStoreHelper.closeStore(context);
+		super.onDestroy();
+	}
+
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		IntentResult res  = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
 		if (res != null)
@@ -91,14 +90,15 @@ public class MainActivity extends Activity {
 	private void initialize()
 	{
 		context = this.getApplicationContext();
-		keyStore = KeyStoreHelper.getKeyStore(context);
-		listView1 = (ListView) findViewById(R.id.listView1);
+		// TODO: App Crash if this is the first Start - cause no password is set!
+		KeyStoreHelper.getKeyStore(context);
+		lvMainMenu = (ListView) findViewById(R.id.listView1);
 		
-        Vector<String> listView1Vector = new Vector<String>();
-        listView1Vector.add("Server"); 
-        listView1Vector.add("Einstellungen");
-        listView1Vector.add("Profil");
-        listView1.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, listView1Vector));
+        Vector<String> lvMenuItems = new Vector<String>();
+        lvMenuItems.add("Server"); 
+        lvMenuItems.add("Einstellungen");
+        lvMenuItems.add("Profil");
+        lvMainMenu.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, lvMenuItems));
 	}
 
 	public void onCreate(Bundle savedInstanceState) {
@@ -108,7 +108,7 @@ public class MainActivity extends Activity {
  
         initialize();
  
-		listView1.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener()
+		lvMainMenu.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener()
         {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -154,7 +154,6 @@ public class MainActivity extends Activity {
             		startActivity(intent);
             		// call profile!
             	}
-            	
             }
         });		
 	} 

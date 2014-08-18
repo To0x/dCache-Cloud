@@ -28,7 +28,7 @@
        
         
         <activity
-            android:name="de.desy.dCacheCloud.Activities.ShareActivity"
+            android:name="de.desy.dCacheCloud.Activities.UploadActivity"
             android:excludeFromRecents="true"
             android:label="@string/title_activity_share"
             android:theme="@android:style/Theme.NoDisplay" >
@@ -73,7 +73,7 @@
         </activity>
         
         <activity
-            android:name="de.desy.dCacheCloud.MainActivity"
+            android:name="de.desy.dCacheCloud.Activities.MainActivity"
             android:label="@string/title_activity_settings" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -87,6 +87,11 @@
             android:label="@string/title_activity_profile">
         </activity>
 
+        <activity
+            android:name="de.desy.dCacheCloud.Activities.ShareWithFriendActivity"
+            android:label="@string/title_shareWithFriendActivity" >
+        </activity>
+        
         <activity android:name="de.desy.dCacheCloud.Activities.FriendFoundActivity"
             android:label="@string/title_activity_friendFound"></activity>
         

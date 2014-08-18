@@ -18,16 +18,11 @@ import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.AbstractHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
-
-import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.SharedPreferences;
 
 public class ServerHelper {
 
@@ -39,7 +34,7 @@ public class ServerHelper {
 		if (user != null && password != null) {
 			AuthScope authScope = new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT);
 			UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(user, password);
-						
+
 			client.getCredentialsProvider().setCredentials(authScope, credentials);
 
 			try {

@@ -62,14 +62,15 @@ public final class R {
         /**  Strings related to Settings 
  Example General settings 
          */
-        public static final int pref_header_autosync=0x7f06000a;
-        public static final int pref_title_auto_sync_camera_pictures=0x7f06000b;
-        public static final int pref_title_auto_sync_camera_videos=0x7f06000c;
-        public static final int pref_title_auto_sync_on_wifi_only=0x7f06000d;
+        public static final int pref_header_autosync=0x7f06000b;
+        public static final int pref_title_auto_sync_camera_pictures=0x7f06000c;
+        public static final int pref_title_auto_sync_camera_videos=0x7f06000d;
+        public static final int pref_title_auto_sync_on_wifi_only=0x7f06000e;
         public static final int title_activity_friendFound=0x7f060008;
         public static final int title_activity_profile=0x7f060005;
-        public static final int title_activity_settings=0x7f060009;
+        public static final int title_activity_settings=0x7f06000a;
         public static final int title_activity_share=0x7f060003;
+        public static final int title_shareWithFriendActivity=0x7f060009;
     }
     public static final class style {
         /** 

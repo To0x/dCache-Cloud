@@ -1,8 +1,5 @@
 package de.desy.dCacheCloud.Activities;
 
-import java.math.BigInteger;
-import java.security.MessageDigest;
-
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Point;
@@ -32,11 +29,9 @@ public class ProfileActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.profile);
+		
 		ivQR = (ImageView)findViewById(R.id.imageViewQR);
 		tvFingerPrint = (TextView)findViewById(R.id.textViewFingerPrint);
-		
-		tvFingerPrint.setText("Fingerprint");
-		
 				 
 	   //Find screen size
 	   WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
@@ -46,7 +41,9 @@ public class ProfileActivity extends Activity {
 	   int width = point.x;
 	   int height = point.y;
 	   int smallerDimension = width < height ? width : height;
-//	   smallerDimension = smallerDimension * 3/4;
+	   
+	   // can scale the size of the QR-Code, if needed
+	   // smallerDimension = smallerDimension * 3/4;
 	 
 	   DatabaseHelper oh = new DatabaseHelper(this);
 	   String content = oh.getOwnPublicKey();

@@ -31,15 +31,20 @@ import android.os.StrictMode;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
 import android.view.View.OnFocusChangeListener;
+import android.view.View.OnLongClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Filterable;
@@ -52,7 +57,7 @@ import de.desy.dCacheCloud.DownloadService;
 import de.desy.dCacheCloud.R;
 import de.desy.dCacheCloud.ServerHelper;
  
-public class ServerViewActivity extends Activity {
+public class ServerViewActivity extends Activity implements OnItemClickListener, OnItemLongClickListener {
 
 	// Defines begin //
 	private static boolean HTTPLOG = false;
@@ -68,6 +73,10 @@ public class ServerViewActivity extends Activity {
 	private String user = null;
  
 	private DefaultHttpClient httpClient = null;
+	
+	
+	private AdapterView<?> parent = null;
+	int position = -1;
 	
 	// http://www.mkyong.com/regular-expressions/how-to-extract-html-links-with-regular-expression/
 	// new expression for file-extracting
@@ -223,6 +232,9 @@ public class ServerViewActivity extends Activity {
         	sortFilesByType();
         }
         
+        listView.setOnItemClickListener(this);
+        
+        /*
         listView.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener()
         {
             @Override
@@ -235,14 +247,14 @@ public class ServerViewActivity extends Activity {
 		            	/*Intent intent = new Intent();
 		            	intent.setAction(android.content.Intent.ACTION_VIEW);
 		            	intent.setData(Uri.parse((url1.toString() + currentItem.replaceAll(" ", "%20"))));
-		            	startActivity(intent);*/ 	            	
+		            	startActivity(intent);	            	
 		        		Intent intent = new Intent(context, DownloadService.class);
 		        		intent.putExtra("url", url1 + currentItem.replaceAll(" ", "%20"));
 		        		intent.putExtra("filename", currentItem);
 		        		startService(intent);
 	            	}
 	            	else { // ... wenn das angeklickte Item ein Ordner ist
-	            		/* neue ServerViewActivity */
+	            		// neue ServerViewActivity //
 	            		if (android.os.Build.VERSION.SDK_INT > 10) {
 	            			StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 	            			StrictMode.setThreadPolicy(policy);
@@ -254,13 +266,14 @@ public class ServerViewActivity extends Activity {
 							e.printStackTrace();
 						}
 	        		    startActivity(intent);
-	        		    /* Ende neue ServerViewActivity */
+	        		    // Ende neue ServerViewActivity //
 	            	}
         		} else {
         			Toast.makeText(getApplicationContext(), "You are not connected to the internet!", Toast.LENGTH_LONG).show();
         		}
             }
         });
+        */
         
         /*listView.setOnItemLongClickListener(new android.widget.AdapterView.OnItemLongClickListener()
         {
@@ -416,12 +429,10 @@ public class ServerViewActivity extends Activity {
 				     
 				    @Override
 				    public void beforeTextChanged(CharSequence arg0, int arg1, int arg2, int arg3) {
-				        // TODO Auto-generated method stub
 				    }
 			
 					@Override
 					public void afterTextChanged(Editable arg0) {
-						// TODO Auto-generated method stub
 					}
 				});
 				
@@ -450,18 +461,100 @@ public class ServerViewActivity extends Activity {
 //		});	
 	}
 		
+	
+	
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+		super.onCreateContextMenu(menu, v, menuInfo);
+		menu.setHeaderTitle("Choose Action");
+		menu.add(0, v.getId(), 0 , "Download");
+		menu.add(0, v.getId(), 0 , "Share");
+	}
+
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);	 	
 		url1 = (URL) getIntent().getExtras().get("url");
-		
+				
         setContentView(R.layout.file_list);
         listView = (ListView) findViewById(R.id.listView1);
 		et = (EditText)findViewById(R.id.inputSearch); 
-
+		registerForContextMenu(listView);
+		
 //		addListenerOnImageButtonRefresh();
 //		addListenerOnImageButtonSort();
 //		addListenerOnImageButtonSearch();		
 		
 	 	test();
+	}
+
+	
+	
+	@Override
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		this.parent = parent;
+		this.position = position;
+		this.openContextMenu(view);
+	}
+	
+	@Override
+	public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+		// TODO: change listview to multi-choice --> then ask for action!
+		listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+		return false;
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		
+        if(item.getTitle().equals("Download"))
+        {
+        	contextMenuDownload(item.getItemId());
+        }  
+        else if (item.getTitle().equals("Share"))
+        {
+        	contextMenuShare(item.getItemId());
+        }  
+        else 
+        	return false;  
+		
+		return super.onContextItemSelected(item);
+	}
+	
+	private void contextMenuDownload(int contextMenuItemID)
+	{
+		if (isNetworkConnected()) {
+			
+        	String currentItem = parent.getItemAtPosition(position).toString();            	
+        	if (!currentItem.substring(currentItem.length() - 1).equals("/")) { // Wenn das angeklickte Item kein Ordner ist...       	
+        		Intent intent = new Intent(getApplicationContext(), DownloadService.class);
+        		intent.putExtra("url", url1 + currentItem.replaceAll(" ", "%20"));
+        		intent.putExtra("filename", currentItem);
+        		startService(intent);
+        	}
+        	else { // ... wenn das angeklickte Item ein Ordner ist
+        		// neue ServerViewActivity //
+        		if (android.os.Build.VERSION.SDK_INT > 10) {
+        			StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        			StrictMode.setThreadPolicy(policy);
+        		}
+    		    Intent intent = new Intent(getApplicationContext(), ServerViewActivity.class);
+				try {
+					intent.putExtra("url", new URL(url1.toString() + currentItem.replaceAll(" ", "%20")));
+				} catch (MalformedURLException e) {
+					e.printStackTrace();
+				}
+    		    startActivity(intent);
+    		    // Ende neue ServerViewActivity //
+        	}
+		} else {
+			Toast.makeText(getApplicationContext(), "You are not connected to the internet!", Toast.LENGTH_LONG).show();
+		}
+	}
+	
+	private void contextMenuShare(int contextMenuItemID)
+	{
+		Intent intent = new Intent(getApplicationContext(), ShareWithFriendActivity.class);
+		intent.putExtra("fileName", parent.getItemAtPosition(position).toString());
+		startActivity(intent);
 	}
 }

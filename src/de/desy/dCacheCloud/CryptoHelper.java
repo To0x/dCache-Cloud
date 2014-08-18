@@ -23,12 +23,10 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
-import android.database.Cursor;
+import dalvik.annotation.TestTarget;
+
 import android.net.Uri;
 import android.os.Environment;
-import android.provider.MediaStore;
-import android.util.Log;
-import android.webkit.MimeTypeMap;
 
 public final class CryptoHelper {
 
@@ -83,6 +81,15 @@ public final class CryptoHelper {
 		return null;
 	}
 	
+	@Deprecated
+	public static boolean encryptAsymmetric(String message) {
+		
+		/*
+		 * TODO: implement!
+		 */
+		return false;
+	}
+	
 	private static boolean encryptBlockCipher(Uri fileName, SecretKey key, boolean withIV) {
 		FileInputStream fis;
 		FileOutputStream fos;
@@ -90,8 +97,10 @@ public final class CryptoHelper {
 		
 		File sdCard = Environment.getExternalStorageDirectory();
 		File fileInput = new File(fileName.getPath());
-		//TODO
-		File fileOutput = new File(sdCard, String.format("dCacheCloud/%s", CryptoHelper.hash(fileName.getLastPathSegment())));
+		File fileOutputDirectory = new File(sdCard, "dCacheCloud/.enc");
+		fileOutputDirectory.mkdirs();
+		
+		File fileOutput = new File(sdCard, String.format("dCacheCloud/.enc/%s", fileName.getLastPathSegment()));
 
 		// generate Cipher
 		try {
@@ -163,9 +172,16 @@ public final class CryptoHelper {
 			File sdCard = Environment.getExternalStorageDirectory();
 			Cipher cipDecrypt = Cipher.getInstance(String.format("%s/%s/%s", SYMMETRIC_ALGORITHM,SYMMETRIC_MODE,SYMMETRIC_PADDING));
 			byte[] ivData = new byte[cipDecrypt.getBlockSize()];
+			
+			File fileInput = new File(sdCard, String.format("dCacheCloud/.enc/%s", fileName));
+			
+			File fileOutputDirectory = new File(sdCard, "dCacheCloud/");
+			fileOutputDirectory.mkdirs();
+			
+			File fileOutput = new File(sdCard, String.format("dCacheCloud/%s",fileName));
 
-			fis = new FileInputStream(new File(sdCard, String.format("dCacheCloud/%s", CryptoHelper.hash(fileName.getLastPathSegment()))));
-			fos = new FileOutputStream(new File(sdCard, String.format("dCache/%s",fileName.getLastPathSegment())));
+			fis = new FileInputStream(fileInput);
+			fos = new FileOutputStream(fileOutput);
 
 			
 			fis.read(ivData, 0, ivData.length);

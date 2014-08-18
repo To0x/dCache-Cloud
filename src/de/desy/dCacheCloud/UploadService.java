@@ -13,9 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpPut;
@@ -33,19 +30,16 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
-import android.provider.MediaStore;
 import android.util.Log;
-import android.webkit.MimeTypeMap;
 import de.desy.dCacheCloud.CountingInputStreamEntity.UploadListener;
 
 /**
  * @author Tom Schubert
  * @version 0.9 BETA
- * @since 21.09.2013
+ * @since 18.08.2014
  *
  */
 @SuppressLint("NewApi")
@@ -165,7 +159,7 @@ public class UploadService extends IntentService {
 		fileUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
 
 		File sdCard = Environment.getExternalStorageDirectory();
-		fileUri = Uri.parse(String.format("file://%s/%s/%s", sdCard.getAbsolutePath(), "dCacheCloud", CryptoHelper.hash(fileUri.getLastPathSegment())));
+		fileUri = Uri.parse(String.format("file://%s/%s/%s", sdCard.getAbsolutePath(), "dCacheCloud/.enc", fileUri.getLastPathSegment()));
 //		File fileOutput = new File(sdCard, String.format("dCacheCloud/%s", CryptoHelper.hash(fileUri.getLastPathSegment())));
 		
 		Log.d("davsync", "Uploading " + fileUri.toString());

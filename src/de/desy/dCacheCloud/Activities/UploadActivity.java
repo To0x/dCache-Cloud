@@ -18,7 +18,7 @@ import de.desy.dCacheCloud.KeyStoreHelper;
 import de.desy.dCacheCloud.R;
 import de.desy.dCacheCloud.UploadService;
 
-public class ShareActivity extends Activity {
+public class UploadActivity extends Activity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -55,11 +55,12 @@ public class ShareActivity extends Activity {
 	private void encryptFile(Uri file)
 	{
 		SecretKey key = CryptoHelper.generateBlockCipherKey(256);
-		String fileHash = CryptoHelper.hash(file.getLastPathSegment());
+		// TODO: encrypt fileName with Private-Key!
+		String encryptedFileName = file.getLastPathSegment();
 		
 		if (CryptoHelper.encryptBlockCipherWithIV(file, key))
 		{
-				KeyStoreHelper.storeKey(KeyStoreHelper.getKeyStore(this), fileHash, key);
+				KeyStoreHelper.storeKey(encryptedFileName, key);
 		}
 	}
 	
@@ -73,8 +74,7 @@ public class ShareActivity extends Activity {
 	
 	private void deleteLocalFile(Uri uri)
 	{
-		//TODO:
-		// check if upload is completed!
+		//TODO: check if upload is completed!
 	}
 	
 	private Uri getFilePath(Uri uriToFile) {
