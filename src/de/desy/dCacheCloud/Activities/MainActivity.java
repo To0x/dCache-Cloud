@@ -2,6 +2,7 @@ package de.desy.dCacheCloud.Activities;
  
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyPair;
 import java.util.Vector;
 
 import External.IntentIntegrator;
@@ -31,6 +32,7 @@ public class MainActivity extends Activity {
  
 	private ListView lvMainMenu;
 	private Context context;
+	private DatabaseHelper oh;
  		
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -64,7 +66,6 @@ public class MainActivity extends Activity {
 		{
 			try
 			{
-				DatabaseHelper oh = new DatabaseHelper(this);
 				String name = oh.getFriendName(res.getContents());
 				
 				if (name != null)
@@ -92,6 +93,17 @@ public class MainActivity extends Activity {
 		context = this.getApplicationContext();
 		// TODO: App Crash if this is the first Start - cause no password is set!
 		KeyStoreHelper.getKeyStore(context);
+		oh = new DatabaseHelper(context);
+		
+	
+		if (KeyStoreHelper.getOwnPriv(context) == null)
+		{
+			// Key´s have to initialize
+			KeyPair pair = CryptoHelper.generateAsymmetricKeyPair(1024);
+			KeyStoreHelper.storeOwnAsymmetric(context, pair);
+		}
+		
+		
 		lvMainMenu = (ListView) findViewById(R.id.listView1);
 		
         Vector<String> lvMenuItems = new Vector<String>();
@@ -133,7 +145,8 @@ public class MainActivity extends Activity {
 							} catch (MalformedURLException e) {
 								e.printStackTrace();
 							}
-		        		    startActivity(intent);
+		        		   
+			        		startActivity(intent);
             			}
             			else {
                 			Toast.makeText(getApplicationContext(), "Please fill in your user data before trying to use the dCache Cloud!", Toast.LENGTH_LONG).show();            				

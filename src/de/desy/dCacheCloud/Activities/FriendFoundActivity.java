@@ -42,7 +42,7 @@ public class FriendFoundActivity extends Activity {
 			else
 			{
 				// TODO:
-				//oh.setPersonPublicKey(friendName.getText().toString(), public_key, tvFriendHash.getText().toString());
+				oh.setPersonPublicKey(friendName.getText().toString(), public_key, tvFriendHash.getText().toString());
 				this.finish();
 			}
 		}

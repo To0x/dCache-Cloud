@@ -12,7 +12,9 @@ import android.widget.TextView;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 
+import de.desy.dCacheCloud.CryptoHelper;
 import de.desy.dCacheCloud.DatabaseHelper;
+import de.desy.dCacheCloud.KeyStoreHelper;
 import de.desy.dCacheCloud.R;
 import de.desy.dCacheCloud.QRCode.Contents;
 import de.desy.dCacheCloud.QRCode.QRCodeEncoder;
@@ -45,9 +47,11 @@ public class ProfileActivity extends Activity {
 	   // can scale the size of the QR-Code, if needed
 	   // smallerDimension = smallerDimension * 3/4;
 	 
-	   DatabaseHelper oh = new DatabaseHelper(this);
-	   String content = oh.getOwnPublicKey();
-	   String hashContent = oh.getOwnHashKey();
+	   //DatabaseHelper oh = new DatabaseHelper(this);
+	   //String content = oh.getOwnPublic().toString();
+	   //String hashContent = oh.getOwnHashKey();
+	   String content = KeyStoreHelper.getOwnPub().toString();
+	   String hashContent = CryptoHelper.hash(content);
 
 	   //Encode with a QR Code image
 	   QRCodeEncoder qrCodeEncoder = new QRCodeEncoder(content, 

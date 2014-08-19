@@ -9,21 +9,24 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
-
-import dalvik.annotation.TestTarget;
 
 import android.net.Uri;
 import android.os.Environment;
@@ -82,12 +85,69 @@ public final class CryptoHelper {
 	}
 	
 	@Deprecated
-	public static boolean encryptAsymmetric(String message) {
+	public static byte[] encryptAsymmetric(String message, boolean encryptWithPrivateKey, PrivateKey privkey, PublicKey pubKey) {
 		
 		/*
 		 * TODO: implement!
-		 */
-		return false;
+		
+		
+		PrivateKey priv = null;
+		PublicKey pub = null;
+		if (!encryptWithPrivateKey)
+		{
+			pub = (PublicKey) key;
+		}
+		else
+		{
+			priv = (PrivateKey) key;
+		}
+		*/
+		try {
+
+			
+			Cipher cip = Cipher.getInstance("RSA/None/PKCS1Padding");
+			Cipher cip2 = Cipher.getInstance("RSA/None/PKCS1Padding");
+			
+			/*
+			 * should be given!
+			 */
+			//if (encryptWithPrivateKey)
+			//{
+				cip.init(Cipher.ENCRYPT_MODE, pubKey);
+				cip2.init(Cipher.DECRYPT_MODE, privkey);
+			//}
+			//else
+			//{
+				//cip.init(Cipher.ENCRYPT_MODE, pub);
+				//cip2.init(Cipher.DECRYPT_MODE, priv);
+			//}
+			
+			byte[] input = message.getBytes("UTF-8");
+			
+			byte[] encrypted = cip.doFinal(input);
+			byte[] decrypted = cip2.doFinal(encrypted);
+			
+			return decrypted;
+			
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (NoSuchPaddingException e) {
+			e.printStackTrace();
+		} catch (InvalidKeyException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} catch (IllegalBlockSizeException e) {
+			e.printStackTrace();
+		} catch (BadPaddingException e) {
+			e.printStackTrace();
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		
+		return null;
 	}
 	
 	private static boolean encryptBlockCipher(Uri fileName, SecretKey key, boolean withIV) {

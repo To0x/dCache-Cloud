@@ -1,7 +1,12 @@
 package de.desy.dCacheCloud.Activities;
 
 import java.util.List;
+
 import javax.crypto.SecretKey;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
@@ -9,6 +14,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 import de.desy.dCacheCloud.CryptoHelper;
 import de.desy.dCacheCloud.DatabaseHelper;
 import de.desy.dCacheCloud.KeyStoreHelper;
@@ -59,8 +65,28 @@ public class ShareWithFriendActivity extends Activity implements OnItemClickList
 	@SuppressWarnings("unused")
 	private void share(String usersPublic)
 	{
+		DatabaseHelper dbh = new DatabaseHelper(getApplicationContext());
+			
 		SecretKey fileAESKey = KeyStoreHelper.getKey(fileName);
-		CryptoHelper.encryptAsymmetric("");
+		JSONObject json = new JSONObject();
+		try
+		{
+			json.put("name", fileName);
+			json.put("key", fileAESKey.getEncoded());
+		}
+		catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+		
+		String message = json.toString();
+		String messageHash = CryptoHelper.hash(message);
+		
+		byte[] signature = CryptoHelper.encryptAsymmetric(messageHash, false, KeyStoreHelper.getOwnPriv(), KeyStoreHelper.getOwnPub());
+		//byte[] encrypted = CryptoHelper.encryptAsymmetric(message + signature, false, KeyStoreHelper.getOwnPub());
+		
+		Toast.makeText(getApplicationContext(), "fin", Toast.LENGTH_LONG).show();
+		
 		/*
 		 * TODO:
 		 * Encrypt (fileName + fileAES) with usersPublic

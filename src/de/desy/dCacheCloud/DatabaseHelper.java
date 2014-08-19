@@ -1,7 +1,11 @@
 package de.desy.dCacheCloud;
 
-import java.security.KeyPair;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,6 +15,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
+import android.util.Base64;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 	private static final String DATABASE_NAME = "dCacheCloud";
@@ -29,10 +34,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		// file-keys: id, name, file-hash
 //		db.execSQL("CREATE TABLE IF NOT EXISTS file_keys(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name STRING NOT NULL, hash STRING NOT NULL;");
 		
-		createPublicKey(db);
+		//createPublicKey(db);
 	}
 
-
+/*
 	private void createPublicKey(SQLiteDatabase db)
 	{
 		KeyPair pair;
@@ -57,6 +62,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 //			db.close();
 		}
 	}
+	*/
 	
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
@@ -93,6 +99,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		return result;
 	}
 
+	/*
 	public String getOwnPublicKey()
 	{
 		SQLiteDatabase db = getWritableDatabase();
@@ -113,6 +120,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		}
 		return null;
 	}
+	*/
 
 	public String getOwnHashKey()
 	{
@@ -259,8 +267,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			Cursor cur = db.rawQuery("SELECT name FROM user_keys ORDER BY id", null);
 			if (cur.moveToFirst())
 			{
-				// frist one is own public Key!
-				//friends.add(cur.getString(0));
+				friends.add(cur.getString(0));
 				while (cur.moveToNext())
 				{
 					friends.add(cur.getString(0));
@@ -316,5 +323,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		database.setTransactionSuccessful();
 		database.endTransaction();
 //		database.close();
+	}
+	
+	public void storeOwnPublic(PublicKey pub)
+	{
+		setPersonPublicKey("ownPublic", new String(Base64.encode(pub.getEncoded(), Base64.DEFAULT)) , CryptoHelper.hash(new String(Base64.encode(pub.getEncoded(), Base64.DEFAULT))));
+	}
+	
+	public PublicKey getOwnPublic()
+	{
+	       String pubKeyStr = getPersonPublicKey("ownPublic");       
+	        byte[] sigBytes = Base64.decode(pubKeyStr, Base64.DEFAULT);
+	        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(sigBytes);
+	        KeyFactory keyFact = null;
+	        try {
+	            keyFact = KeyFactory.getInstance("RSA", "BC");
+	        } catch (NoSuchAlgorithmException e) {
+	            e.printStackTrace();
+	        } catch (NoSuchProviderException e) {
+	            e.printStackTrace();
+	        }
+	        try {
+	            return  keyFact.generatePublic(x509KeySpec);
+	        } catch (InvalidKeySpecException e) {
+	            e.printStackTrace();
+	        }
+	        return null;
 	}
 }

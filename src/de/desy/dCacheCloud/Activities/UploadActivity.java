@@ -55,7 +55,6 @@ public class UploadActivity extends Activity {
 	private void encryptFile(Uri file)
 	{
 		SecretKey key = CryptoHelper.generateBlockCipherKey(256);
-		// TODO: encrypt fileName with Private-Key!
 		String encryptedFileName = file.getLastPathSegment();
 		
 		if (CryptoHelper.encryptBlockCipherWithIV(file, key))
