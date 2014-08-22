@@ -9,14 +9,17 @@ import External.IntentIntegrator;
 import External.IntentResult;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -32,12 +35,15 @@ import de.desy.dCacheCloud.CryptoHelper;
 import de.desy.dCacheCloud.DatabaseHelper;
 import de.desy.dCacheCloud.KeyStoreHelper;
 import de.desy.dCacheCloud.R;
+import de.desy.dCacheCloud.UploadService;
 
 public class MainActivity extends Activity implements OnItemClickListener {
  
 	private ListView lvMainMenu;
 	private Context context;
 	private DatabaseHelper oh;
+	
+	private static int UPLOAD_REQUEST = 1;
  		
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -47,6 +53,15 @@ public class MainActivity extends Activity implements OnItemClickListener {
 			IntentIntegrator id = new IntentIntegrator(this);
 			id.initiateScan(IntentIntegrator.QR_CODE_TYPES);
 			break;
+		case R.id.action_upload:
+	        Intent fileintent = new Intent(Intent.ACTION_GET_CONTENT);
+	        fileintent.setType("*/*");
+	        try {
+	            startActivityForResult(fileintent, UPLOAD_REQUEST);
+	        } catch (ActivityNotFoundException e) {
+	        	e.printStackTrace();
+	        }
+	        break;
 		}
 		return super.onOptionsItemSelected(item);
 	}
@@ -79,6 +94,18 @@ public class MainActivity extends Activity implements OnItemClickListener {
 	
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		IntentResult res  = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
+		
+		if (requestCode == UPLOAD_REQUEST)
+		{
+			Toast.makeText(getApplicationContext(), "File found", Toast.LENGTH_LONG).show();
+			Uri fileUri = intent.getData();
+			Intent ulIntent = new Intent(context, UploadActivity.class);
+			ulIntent.setType(fileUri.getScheme());
+			ulIntent.setAction(Intent.ACTION_SEND);
+			ulIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+			startActivity(ulIntent);
+		}
+		
 		if (res != null)
 		{
 			try

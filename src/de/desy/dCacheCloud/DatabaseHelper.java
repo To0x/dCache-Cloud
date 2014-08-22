@@ -1,11 +1,6 @@
 package de.desy.dCacheCloud;
 
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +10,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
-import android.util.Base64;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 	private static final String DATABASE_NAME = "dCacheCloud";
@@ -27,7 +21,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		// quee
+		// queue
 		db.execSQL("CREATE TABLE IF NOT EXISTS sync_queue (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, uri STRING NOT NULL, not_before DATETIME, uploading BOOLEAN DEFAULT 0);");
 		// user-keys: id, name, public-key
 		db.execSQL("CREATE TABLE IF NOT EXISTS user_keys(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name STRING NOT NULL, public_key STRING NOT NULL, public_hash STRING NOT NULL);");
@@ -282,7 +276,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		return friends;
 	}
 	
-	public String getPersonPublicKey(String name)
+	public PublicKey getPersonPublicKey(String name)
 	{
 		SQLiteDatabase db = getReadableDatabase();
 		db.beginTransaction();
@@ -292,13 +286,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			if (cur.moveToFirst())
 			{
 				db.setTransactionSuccessful();
-				return cur.getString(0);
+				PublicKey pub = CryptoHelper.StringToPublicKey(cur.getString(0));
+				return pub;
 			}
 		}
 		finally
 		{
 			db.endTransaction();
-//			db.close();
 		}
 		return null;
 	}
@@ -325,14 +319,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 //		database.close();
 	}
 	
+	/*
 	public void storeOwnPublic(PublicKey pub)
 	{
 		setPersonPublicKey("ownPublic", new String(Base64.encode(pub.getEncoded(), Base64.DEFAULT)) , CryptoHelper.hash(new String(Base64.encode(pub.getEncoded(), Base64.DEFAULT))));
 	}
+	*/
 	
+	/*
 	public PublicKey getOwnPublic()
 	{
-	       String pubKeyStr = getPersonPublicKey("ownPublic");       
+	        String pubKeyStr = getPersonPublicKey("ownPublic");       
 	        byte[] sigBytes = Base64.decode(pubKeyStr, Base64.DEFAULT);
 	        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(sigBytes);
 	        KeyFactory keyFact = null;
@@ -350,4 +347,5 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	        }
 	        return null;
 	}
+	*/
 }

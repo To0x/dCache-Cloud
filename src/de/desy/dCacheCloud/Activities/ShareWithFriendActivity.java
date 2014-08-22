@@ -60,8 +60,8 @@ public class ShareWithFriendActivity extends Activity implements OnItemClickList
 		if (!friendsFound)
 			return;
 		
-		String usersPublic = dbh.getPersonPublicKey(lvFriends.getItemAtPosition(position).toString());
-		share(CryptoHelper.StringToPublicKey(usersPublic));
+		PublicKey usersPublic = dbh.getPersonPublicKey(lvFriends.getItemAtPosition(position).toString());
+		share(usersPublic);
 	}
 	
 	private void share(PublicKey key)
@@ -82,11 +82,14 @@ public class ShareWithFriendActivity extends Activity implements OnItemClickList
 		String message = json.toString();
 		String messageHash = CryptoHelper.hash(message);
 		
+		// TODO: signature lenght = 1024?
 		byte[] signature = CryptoHelper.encryptAsymmetric(messageHash, true, KeyStoreHelper.getOwnPriv());
 		// TODO: String + byte[] ?!? --> what happened here?
 		byte[] encrypted = CryptoHelper.encryptAsymmetric(message + signature, false, key);
+		String ownPubHash = CryptoHelper.hash(CryptoHelper.PublicKeyToString(KeyStoreHelper.getOwnPub()));
 		
 		String output = Base64.encodeToString(encrypted, Base64.DEFAULT);
+		output += ownPubHash;
 //		Toast.makeText(getApplicationContext(), output, Toast.LENGTH_LONG).show();
 		
 		Intent intent = new Intent(getApplicationContext(), ShareDataActivity.class);

@@ -48,7 +48,7 @@ public final class CryptoHelper {
 	public static String PublicKeyToString(PublicKey key)
 	{
 		try {
-		    KeyFactory fact = KeyFactory.getInstance("DSA");
+		    KeyFactory fact = KeyFactory.getInstance(ASYMMETRIC_ALGORITHM);
 		    X509EncodedKeySpec spec;
 			spec = fact.getKeySpec(key,X509EncodedKeySpec.class);
 		    return Base64.encodeToString(spec.getEncoded(), Base64.DEFAULT);
@@ -116,6 +116,43 @@ public final class CryptoHelper {
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
+		return null;
+	}
+	
+	public static byte[] decryptAsymmetric(byte[] encrypted, boolean decryptWithPublicKey, Key key)
+	{
+		try {
+			PrivateKey priv = null;
+			PublicKey pub = null;
+			
+			Cipher cip = Cipher.getInstance("RSA/None/PKCS1Padding");
+			
+			if (decryptWithPublicKey)
+			{
+				pub = (PublicKey) key;
+				cip.init(Cipher.DECRYPT_MODE, pub);
+			}
+			else
+			{
+				priv = (PrivateKey) key;
+				cip.init(Cipher.DECRYPT_MODE, priv);
+			}
+			
+			byte[] decrypted = cip.doFinal();
+			return decrypted;
+			
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (NoSuchPaddingException e) {
+			e.printStackTrace();
+		} catch (InvalidKeyException e) {
+			e.printStackTrace();
+		} catch (IllegalBlockSizeException e) {
+			e.printStackTrace();
+		} catch (BadPaddingException e) {
+			e.printStackTrace();
+		}
+		
 		return null;
 	}
 	

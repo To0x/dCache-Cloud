@@ -15,7 +15,6 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 
 import de.desy.dCacheCloud.CryptoHelper;
-import de.desy.dCacheCloud.DatabaseHelper;
 import de.desy.dCacheCloud.KeyStoreHelper;
 import de.desy.dCacheCloud.R;
 
