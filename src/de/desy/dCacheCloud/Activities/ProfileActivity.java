@@ -1,5 +1,7 @@
 package de.desy.dCacheCloud.Activities;
 
+import External.Contents;
+import External.QRCodeEncoder;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Point;
@@ -16,8 +18,6 @@ import de.desy.dCacheCloud.CryptoHelper;
 import de.desy.dCacheCloud.DatabaseHelper;
 import de.desy.dCacheCloud.KeyStoreHelper;
 import de.desy.dCacheCloud.R;
-import de.desy.dCacheCloud.QRCode.Contents;
-import de.desy.dCacheCloud.QRCode.QRCodeEncoder;
 
 public class ProfileActivity extends Activity {
 
@@ -50,7 +50,7 @@ public class ProfileActivity extends Activity {
 	   //DatabaseHelper oh = new DatabaseHelper(this);
 	   //String content = oh.getOwnPublic().toString();
 	   //String hashContent = oh.getOwnHashKey();
-	   String content = KeyStoreHelper.getOwnPub().toString();
+	   String content = CryptoHelper.PublicKeyToString(KeyStoreHelper.getOwnPub());
 	   String hashContent = CryptoHelper.hash(content);
 
 	   //Encode with a QR Code image

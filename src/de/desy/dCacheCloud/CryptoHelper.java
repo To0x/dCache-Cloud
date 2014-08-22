@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
@@ -17,6 +18,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -30,6 +33,7 @@ import javax.crypto.spec.IvParameterSpec;
 
 import android.net.Uri;
 import android.os.Environment;
+import android.util.Base64;
 
 public final class CryptoHelper {
 
@@ -41,6 +45,37 @@ public final class CryptoHelper {
 	private static final String SYMMETRIC_MODE = 			"CBC";
 	private static final String SYMMETRIC_PADDING = 		"PKCS7Padding";
 		
+	public static String PublicKeyToString(PublicKey key)
+	{
+		try {
+		    KeyFactory fact = KeyFactory.getInstance("DSA");
+		    X509EncodedKeySpec spec;
+			spec = fact.getKeySpec(key,X509EncodedKeySpec.class);
+		    return Base64.encodeToString(spec.getEncoded(), Base64.DEFAULT);
+		} catch (InvalidKeySpecException e) {
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+	   return null;
+	}
+	
+	public static PublicKey StringToPublicKey(String keyData) {
+
+	    KeyFactory fact;
+		try {
+			byte[] data = Base64.decode(keyData, Base64.DEFAULT);
+		    X509EncodedKeySpec spec = new X509EncodedKeySpec(data);
+			fact = KeyFactory.getInstance("DSA");
+		    return fact.generatePublic(spec);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (InvalidKeySpecException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
 	public static String hash(String value)
 	{
 
@@ -84,50 +119,29 @@ public final class CryptoHelper {
 		return null;
 	}
 	
-	@Deprecated
-	public static byte[] encryptAsymmetric(String message, boolean encryptWithPrivateKey, PrivateKey privkey, PublicKey pubKey) {
-		
-		/*
-		 * TODO: implement!
-		
-		
-		PrivateKey priv = null;
-		PublicKey pub = null;
-		if (!encryptWithPrivateKey)
-		{
-			pub = (PublicKey) key;
-		}
-		else
-		{
-			priv = (PrivateKey) key;
-		}
-		*/
+	public static byte[] encryptAsymmetric(String message, boolean encryptWithPrivateKey, Key key) {
+	
 		try {
-
 			
+			PrivateKey priv = null;
+			PublicKey pub = null;
+			// TODO: Check if PKCS7 and CBC is available
 			Cipher cip = Cipher.getInstance("RSA/None/PKCS1Padding");
-			Cipher cip2 = Cipher.getInstance("RSA/None/PKCS1Padding");
-			
-			/*
-			 * should be given!
-			 */
-			//if (encryptWithPrivateKey)
-			//{
-				cip.init(Cipher.ENCRYPT_MODE, pubKey);
-				cip2.init(Cipher.DECRYPT_MODE, privkey);
-			//}
-			//else
-			//{
-				//cip.init(Cipher.ENCRYPT_MODE, pub);
-				//cip2.init(Cipher.DECRYPT_MODE, priv);
-			//}
-			
+			if (!encryptWithPrivateKey)
+			{
+				pub = (PublicKey) key;
+				cip.init(Cipher.ENCRYPT_MODE, pub);
+			}
+			else
+			{
+				priv = (PrivateKey) key;
+				cip.init(Cipher.ENCRYPT_MODE, priv);
+			}
+
 			byte[] input = message.getBytes("UTF-8");
 			
 			byte[] encrypted = cip.doFinal(input);
-			byte[] decrypted = cip2.doFinal(encrypted);
-			
-			return decrypted;
+			return encrypted;
 			
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();

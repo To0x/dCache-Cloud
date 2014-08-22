@@ -32,7 +32,6 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 
 public class KeyStoreHelper {
 
@@ -41,7 +40,12 @@ public class KeyStoreHelper {
 	private static KeyStore ks = null;
 	private static FileOutputStream fos;
 	private static String password = "";
-	private static Context context = null;
+	private static boolean passwordSet = false;
+//	private static Context context = null;
+	
+	public static void passwordWasCorrect() {
+		passwordSet = true;
+	}
 	
 	private static boolean keyStoreExists(Context c)
 	{
@@ -53,17 +57,45 @@ public class KeyStoreHelper {
 		return false;
 	}
 	
-	public static KeyStore getKeyStore(Context c)
+	
+	public static KeyStore getKeyStore ()
 	{
-		context = c;
-		if (ks != null)
-			return ks;
+		return ks;
+	}
+	
+	public static KeyStore load(Context c)
+	{
+		if (!passwordSet)
+			return null;
+		
+		ks = null;
+		try {
+			ks = KeyStore.getInstance(KeyStore.getDefaultType());
+			FileInputStream fis = c.openFileInput(KEYSTOREFILEPATH);
+			ks.load (fis, password.toCharArray());
+		} catch (KeyStoreException e) {
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (CertificateException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return ks;
+	}
+		
+	public static KeyStore init(Context c, String passwd)
+	{
+//		context = c;
+		password = passwd;
 		
 		try {
 			
 			ks = KeyStore.getInstance(KeyStore.getDefaultType());
-			SharedPreferences preferences = c.getSharedPreferences("de.desy.dCacheCloud_preferences", Context.MODE_PRIVATE);
-			password = preferences.getString("webdav_password", null);
 			pp = new PasswordProtection(password.toCharArray());
 						
 			if (!keyStoreExists(c))
@@ -80,11 +112,13 @@ public class KeyStoreHelper {
 				ks.store(fos, password.toCharArray());
 				return ks;
 			}
-			
-			FileInputStream fis = c.openFileInput(KEYSTOREFILEPATH);
-			ks.load(fis, password.toCharArray());
-				
-			return ks;
+			else
+			{
+				FileInputStream fis = c.openFileInput(KEYSTOREFILEPATH);
+				ks.load(fis, password.toCharArray());
+					
+				return ks;
+			}
 			//SecretKeyEntry ksentry = new SecretKeyEntry(key);
 			//PasswordProtection pp = new PasswordProtection(password.toCharArray());
 			
@@ -104,13 +138,14 @@ public class KeyStoreHelper {
 	}
 	
 	public static boolean storeKey(String name, SecretKey key) {
+		
 		if (ks == null)
 			return false;
 
 		try {
 			KeyStore.Entry entry = new SecretKeyEntry(key);
 			ks.setEntry(name, entry, pp);
-			closeStore();
+//			closeStore();
 			return true;
 		} catch (KeyStoreException e) {
 			e.printStackTrace();
@@ -125,7 +160,12 @@ public class KeyStoreHelper {
 			return null;
 		
 		try {
+//			FileInputStream fis = context.openFileInput(KEYSTOREFILEPATH);
+//			ks.load(fis, password.toCharArray());
+			
 			KeyStore.SecretKeyEntry entry = (SecretKeyEntry) ks.getEntry(name, pp);
+//			closeStore();
+			
 			return entry.getSecretKey();
 			
 		} catch (NoSuchAlgorithmException e) {
@@ -135,6 +175,13 @@ public class KeyStoreHelper {
 		} catch (KeyStoreException e) {
 			e.printStackTrace();
 		}
+//			catch (FileNotFoundException e) {
+//			e.printStackTrace();
+//		} catch (CertificateException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 		return null;
 	}
 	
@@ -145,7 +192,14 @@ public class KeyStoreHelper {
 		
 		KeyStore.PrivateKeyEntry privEntry;
 		try {
+//			FileInputStream fis = context.openFileInput(KEYSTOREFILEPATH);
+//			ks.load(fis, password.toCharArray());
+			
 			privEntry = (PrivateKeyEntry) ks.getEntry("ownPrivate", pp);
+			
+			if (privEntry == null)
+				return null;
+			
 			return privEntry.getPrivateKey();
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
@@ -154,15 +208,17 @@ public class KeyStoreHelper {
 		} catch (KeyStoreException e) {
 			e.printStackTrace();
 		}
-		
 		return null;
 	}
+	
+	/*
 	
 	public static PrivateKey getOwnPriv(Context c)
 	{
 		KeyStore.PrivateKeyEntry priv;
 		try {
-			priv = (PrivateKeyEntry) getKeyStore(c).getEntry("ownPrivate", pp);
+			priv = (PrivateKeyEntry) load(c).getEntry("ownPrivate", pp);
+//			closeStore();
 			return priv.getPrivateKey();
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
@@ -176,18 +232,22 @@ public class KeyStoreHelper {
 		}
 		return null;
 	}
+	*/
 	
+	/*
 	public static PublicKey getOwnPub(Context c)
 	{
 		java.security.cert.Certificate cert;
 		try {
-			cert = getKeyStore(c).getCertificate("ownCert");
+			cert = load(c).getCertificate("ownCert");
+//			closeStore();
 			return cert.getPublicKey();
 		} catch (KeyStoreException e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
+	*/
 	
 	public static PublicKey getOwnPub()
 	{
@@ -196,24 +256,37 @@ public class KeyStoreHelper {
 		
 		java.security.cert.Certificate cert;
 		try {
+//			FileInputStream fis = context.openFileInput(KEYSTOREFILEPATH);
+//			ks.load(fis, password.toCharArray());
+			
 			cert = ks.getCertificate("ownCert");
+//			closeStore();
 			return cert.getPublicKey();
 		} catch (KeyStoreException e) {
 			e.printStackTrace();
-		}
+		} 
+//		catch (FileNotFoundException e) {
+//			e.printStackTrace();
+//		} catch (NoSuchAlgorithmException e) {
+//			e.printStackTrace();
+//		} catch (CertificateException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 		return null;
 	}
 	
-	public static boolean storeOwnAsymmetric(Context c, KeyPair pair)
+	public static boolean storeOwnAsymmetric(KeyPair pair)
 	{
 		X509Certificate cert = generateSelfSignedCertificate(pair);
 		KeyStore.PrivateKeyEntry privEntry = new PrivateKeyEntry(pair.getPrivate(), new java.security.cert.Certificate[] {cert});
 		
 		try {
-			KeyStore ks = getKeyStore(c);
+//			KeyStore ks = load(c);
 			ks.setEntry("ownPrivate", privEntry, pp);
 			ks.setCertificateEntry("ownCert", cert);
-			closeStore();
+//			closeStore();
 			return true;
 		} catch (KeyStoreException e) {
 			e.printStackTrace();
@@ -222,10 +295,12 @@ public class KeyStoreHelper {
 		return false;
 	}
 		
+	/*
 	public static SecretKey getKey(Context c, String name)
 	{
 		try {
-			KeyStore.SecretKeyEntry key = (SecretKeyEntry) getKeyStore(c).getEntry(name, pp);
+			KeyStore.SecretKeyEntry key = (SecretKeyEntry) load(c).getEntry(name, pp);
+//			closeStore();
 			return key.getSecretKey();
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
@@ -236,12 +311,15 @@ public class KeyStoreHelper {
 		}
 		return null;
 	}
+	*/
 	
+	/*
 	public static void closeStore()
 	{
 		try {
 			fos = context.openFileOutput(KEYSTOREFILEPATH, Context.MODE_PRIVATE);
 			ks.store(fos, password.toCharArray());
+			ks = null;
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (KeyStoreException e) {
@@ -254,9 +332,13 @@ public class KeyStoreHelper {
 			e.printStackTrace();
 		}
 	}
+	*/
 	
-	public static void closeStore(Context c)
+	public static void close(Context c)
 	{
+		if (!passwordSet)
+			return;
+		
 		try {
 			fos = c.openFileOutput(KEYSTOREFILEPATH, Context.MODE_PRIVATE);
 			ks.store(fos, password.toCharArray());

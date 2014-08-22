@@ -46,7 +46,7 @@ public class ServerHelper {
 		}
 	}
 
-	public static DefaultHttpClient getClient() throws KeyStoreException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, IOException 
+	public static DefaultHttpClient getClient(KeyStore ks) throws KeyStoreException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, IOException 
 	{ 
 		DefaultHttpClient ret = null;
 
@@ -72,12 +72,14 @@ public class ServerHelper {
 	    //params.setBooleanParameter("http.protocol.expect-continue", false);
 	    params.setBooleanParameter("http.protocol.expect-continue", true);
 	
-	    // set up TrustStore for Certificates //
+	    /* set up TrustStore for Certificates //
         KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
         trustStore.load(null, null);
+        */
 
-		MySSLSocketFactory ssl = new MySSLSocketFactory(trustStore);
+		MySSLSocketFactory ssl = new MySSLSocketFactory(ks);
 		ssl.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+//		*/
 		
 	    SchemeRegistry registry = new SchemeRegistry();
 	    registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
@@ -87,4 +89,11 @@ public class ServerHelper {
 	    ret = new DefaultHttpClient(manager, params);
 	    return ret;
 	}	
+	
+	public static DefaultHttpClient getClient() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException
+	{
+		KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+		ks.load(null, null);
+		return getClient(ks);
+	}
 }

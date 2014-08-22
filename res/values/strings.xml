@@ -11,5 +11,8 @@
     <string name="action_addUser">Benutzer Hinzufügen</string>
     <string name="title_activity_friendFound">Freund gefunden</string>
     <string name="title_shareWithFriendActivity">Mit Freund teilen</string>
+    <string name="title_activity_shareData">Daten teilen</string>
+    <string name="title_activity_import_data">Daten importieren</string>
+    <string name="title_activity_userpassword">Anmeldung</string>
 
 </resources>

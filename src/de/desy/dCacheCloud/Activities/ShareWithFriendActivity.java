@@ -1,5 +1,6 @@
 package de.desy.dCacheCloud.Activities;
 
+import java.security.PublicKey;
 import java.util.List;
 
 import javax.crypto.SecretKey;
@@ -8,13 +9,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 import de.desy.dCacheCloud.CryptoHelper;
 import de.desy.dCacheCloud.DatabaseHelper;
 import de.desy.dCacheCloud.KeyStoreHelper;
@@ -59,20 +61,18 @@ public class ShareWithFriendActivity extends Activity implements OnItemClickList
 			return;
 		
 		String usersPublic = dbh.getPersonPublicKey(lvFriends.getItemAtPosition(position).toString());
-		share(usersPublic);
+		share(CryptoHelper.StringToPublicKey(usersPublic));
 	}
 	
-	@SuppressWarnings("unused")
-	private void share(String usersPublic)
+	private void share(PublicKey key)
 	{
-		DatabaseHelper dbh = new DatabaseHelper(getApplicationContext());
-			
 		SecretKey fileAESKey = KeyStoreHelper.getKey(fileName);
+		
 		JSONObject json = new JSONObject();
 		try
 		{
 			json.put("name", fileName);
-			json.put("key", fileAESKey.getEncoded());
+			json.put("key", Base64.encode(fileAESKey.getEncoded(), Base64.DEFAULT));
 		}
 		catch (JSONException e)
 		{
@@ -82,16 +82,18 @@ public class ShareWithFriendActivity extends Activity implements OnItemClickList
 		String message = json.toString();
 		String messageHash = CryptoHelper.hash(message);
 		
-		byte[] signature = CryptoHelper.encryptAsymmetric(messageHash, false, KeyStoreHelper.getOwnPriv(), KeyStoreHelper.getOwnPub());
-		//byte[] encrypted = CryptoHelper.encryptAsymmetric(message + signature, false, KeyStoreHelper.getOwnPub());
+		byte[] signature = CryptoHelper.encryptAsymmetric(messageHash, true, KeyStoreHelper.getOwnPriv());
+		// TODO: String + byte[] ?!? --> what happened here?
+		byte[] encrypted = CryptoHelper.encryptAsymmetric(message + signature, false, key);
 		
-		Toast.makeText(getApplicationContext(), "fin", Toast.LENGTH_LONG).show();
+		String output = Base64.encodeToString(encrypted, Base64.DEFAULT);
+//		Toast.makeText(getApplicationContext(), output, Toast.LENGTH_LONG).show();
 		
-		/*
-		 * TODO:
-		 * Encrypt (fileName + fileAES) with usersPublic
-		 * read digital Signature --> do hash and encrypt with own private!
-		 */
+		Intent intent = new Intent(getApplicationContext(), ShareDataActivity.class);
+		intent.putExtra("DATA", output);
+		startActivity(intent);
+		finish();
+		
 		return;
 	}
 }

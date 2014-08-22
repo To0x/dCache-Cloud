@@ -29,25 +29,41 @@ public final class R {
         public static final int ic_launcher=0x7f020005;
     }
     public static final class id {
-        public static final int action_addUser=0x7f09000a;
-        public static final int action_upload=0x7f090009;
-        public static final int buttonFriendOK=0x7f090002;
-        public static final int editTextFriendName=0x7f090000;
-        public static final int imageViewQR=0x7f090007;
-        public static final int inputSearch=0x7f090004;
-        public static final int listView1=0x7f090003;
-        public static final int progressBar=0x7f090006;
-        public static final int text=0x7f090005;
-        public static final int textViewFingerPrint=0x7f090008;
-        public static final int textViewFriendFingerprint=0x7f090001;
+        public static final int action_addUser=0x7f090016;
+        public static final int action_upload=0x7f090015;
+        public static final int btnCopyToClipboard=0x7f090001;
+        public static final int btnDataOk=0x7f090007;
+        public static final int btnUserPassOk=0x7f09000d;
+        public static final int buttonFriendOK=0x7f090005;
+        public static final int editTextFriendName=0x7f090003;
+        public static final int etData=0x7f090006;
+        public static final int etPassword=0x7f09000c;
+        public static final int etUserName=0x7f09000a;
+        public static final int imageViewQR=0x7f090011;
+        public static final int inputSearch=0x7f09000e;
+        public static final int listView1=0x7f090008;
+        public static final int progressBar=0x7f090010;
+        public static final int text=0x7f09000f;
+        public static final int textViewFingerPrint=0x7f090012;
+        public static final int textViewFriendFingerprint=0x7f090004;
+        public static final int tvInfo=0x7f090002;
+        public static final int tvMasterPassword=0x7f090013;
+        public static final int tvPassword=0x7f09000b;
+        public static final int tvShareData=0x7f090000;
+        public static final int tvUserName=0x7f090009;
+        public static final int user_input=0x7f090014;
     }
     public static final class layout {
-        public static final int activity_friend_found=0x7f030000;
-        public static final int activity_main=0x7f030001;
-        public static final int activity_share=0x7f030002;
-        public static final int file_list=0x7f030003;
-        public static final int myprogressdialog=0x7f030004;
-        public static final int profile=0x7f030005;
+        public static final int activity_data_to_share=0x7f030000;
+        public static final int activity_friend_found=0x7f030001;
+        public static final int activity_import_data=0x7f030002;
+        public static final int activity_main=0x7f030003;
+        public static final int activity_share=0x7f030004;
+        public static final int activity_user_password=0x7f030005;
+        public static final int file_list=0x7f030006;
+        public static final int myprogressdialog=0x7f030007;
+        public static final int profile=0x7f030008;
+        public static final int searchprompt=0x7f030009;
     }
     public static final class menu {
         public static final int main_activity_actions=0x7f080000;
@@ -62,14 +78,17 @@ public final class R {
         /**  Strings related to Settings 
  Example General settings 
          */
-        public static final int pref_header_autosync=0x7f06000b;
-        public static final int pref_title_auto_sync_camera_pictures=0x7f06000c;
-        public static final int pref_title_auto_sync_camera_videos=0x7f06000d;
-        public static final int pref_title_auto_sync_on_wifi_only=0x7f06000e;
+        public static final int pref_header_autosync=0x7f06000e;
+        public static final int pref_title_auto_sync_camera_pictures=0x7f06000f;
+        public static final int pref_title_auto_sync_camera_videos=0x7f060010;
+        public static final int pref_title_auto_sync_on_wifi_only=0x7f060011;
         public static final int title_activity_friendFound=0x7f060008;
+        public static final int title_activity_import_data=0x7f06000b;
         public static final int title_activity_profile=0x7f060005;
-        public static final int title_activity_settings=0x7f06000a;
+        public static final int title_activity_settings=0x7f06000d;
         public static final int title_activity_share=0x7f060003;
+        public static final int title_activity_shareData=0x7f06000a;
+        public static final int title_activity_userpassword=0x7f06000c;
         public static final int title_shareWithFriendActivity=0x7f060009;
     }
     public static final class style {

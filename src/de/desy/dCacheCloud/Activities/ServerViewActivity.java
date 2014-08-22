@@ -54,6 +54,7 @@ import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
 import de.desy.dCacheCloud.DownloadService;
+import de.desy.dCacheCloud.KeyStoreHelper;
 import de.desy.dCacheCloud.R;
 import de.desy.dCacheCloud.ServerHelper;
  
@@ -166,7 +167,7 @@ public class ServerViewActivity extends Activity implements OnItemClickListener,
 		final Context context = this;
 	        	
 		try {
-			httpClient = ServerHelper.getClient();
+			httpClient = ServerHelper.getClient(KeyStoreHelper.getKeyStore());
 		} catch (GeneralSecurityException e) {
 			Log.d("SECURITY", String.format("General Security Error: %s", e.toString()));
 			e.printStackTrace();
