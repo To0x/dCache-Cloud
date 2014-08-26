@@ -1,7 +1,6 @@
 package de.desy.dCacheCloud.Activities;
 
 import android.app.Activity;
-import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.util.Base64;
 import android.view.View;

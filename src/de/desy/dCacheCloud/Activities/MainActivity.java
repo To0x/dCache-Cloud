@@ -19,7 +19,6 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -35,13 +34,12 @@ import de.desy.dCacheCloud.CryptoHelper;
 import de.desy.dCacheCloud.DatabaseHelper;
 import de.desy.dCacheCloud.KeyStoreHelper;
 import de.desy.dCacheCloud.R;
-import de.desy.dCacheCloud.UploadService;
 
 public class MainActivity extends Activity implements OnItemClickListener {
  
 	private ListView lvMainMenu;
 	private Context context;
-	private DatabaseHelper oh;
+	private DatabaseHelper dbh;
 	
 	private static int UPLOAD_REQUEST = 1;
  		
@@ -110,7 +108,7 @@ public class MainActivity extends Activity implements OnItemClickListener {
 		{
 			try
 			{
-				String name = oh.getFriendName(res.getContents());
+				String name = dbh.getFriendName(res.getContents());
 				
 				if (name != null)
 				{
@@ -192,7 +190,7 @@ public class MainActivity extends Activity implements OnItemClickListener {
 	 */
 	private void initialize()
 	{
-		oh = new DatabaseHelper(context);
+		dbh = new DatabaseHelper(context);
 	
 		KeyStoreHelper.load(context);
 		
